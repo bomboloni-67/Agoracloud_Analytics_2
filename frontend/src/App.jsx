@@ -42,8 +42,6 @@ function App() {
     }
   };
 
-  const toggleTheme = () => setIsDark(!isDark);
-
   if (!isLoggedIn) {
     return <Login onLogin={handleLogin} />;
   }
