@@ -8,6 +8,7 @@
     "preview": "vite preview"
   },
   "dependencies": {
+    "amazon-quicksight-embedding-sdk": "^2.11.0",
     "chart.js": "^4.3.0",
     "lucide-react": "^0.561.0",
     "react": "^18.2.0",

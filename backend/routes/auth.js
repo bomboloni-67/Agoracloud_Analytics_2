@@ -76,3 +76,31 @@ router.post('/login', async (req, res) => {
         res.status(500).json({ message: "Login failed" });
     }
 });
+
+// GET EMBED URL FOR AUTHENTICATED USER
+router.get('/embed-url', async (req, res) => {
+    try {
+        // 1. Get user info from the JWT (provided by your existing auth middleware)
+        // For now, let's assume req.user is populated by your JWT check
+        const userArn = `arn:aws:quicksight:us-east-1:${process.env.AWS_ACCOUNT_ID}:user/default/${req.user.user_id}`;
+
+        const params = {
+            AwsAccountId: process.env.AWS_ACCOUNT_ID,
+            UserArn: userArn,
+            SessionLifetimeInMinutes: 600, // Max 10 hours
+            ExperienceConfiguration: {
+                GenerativeQnA: {
+                    InitialTopicId: process.env.QUICKSIGHT_TOPIC_ID // The ID of your Q Topic
+                }
+            }
+        };
+
+        const result = await lambda.generateEmbedUrlForRegisteredUser(params).promise();
+        res.json({ embedUrl: result.EmbedUrl });
+    } catch (err) {
+        console.error("Embedding Error:", err);
+        res.status(500).json({ message: "Could not generate embed URL" });
+    }
+});
+
+module.exports = router;
