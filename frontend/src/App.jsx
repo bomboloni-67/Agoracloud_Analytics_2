@@ -10,39 +10,67 @@ function App() {
   const [embedUrl, setEmbedUrl] = useState('');
   const [currentQuestion, setCurrentQuestion] = useState('');
   const [isLoading, setIsLoading] = useState(false);
+  
 
+  const API_GATEWAY_URL = "https://ugzwp0xwdh.execute-api.ap-southeast-1.amazonaws.com/test/get-url";
   const handleLogin = (user) => {
     setUsername(user);
     setIsLoggedIn(true);
   };
 
   const handleSend = async (question) => {
+    console.log("🚀 START: handleSend initiated for question:", question);
     setIsLoading(true);
     setCurrentQuestion(question);
 
     try {
-      // Get the RS256 token from storage
       const token = localStorage.getItem('custom_jwt');
       
-      const res = await fetch('http://localhost:4000/api/embed-url', {
+      // DEBUG: Check if token actually exists in storage
+      if (!token) {
+        console.warn("⚠️ No JWT found in localStorage! Authorizer will fail.");
+      } else {
+        console.log("🔑 JWT Token retrieved (first 20 chars):", token.substring(0, 20) + "...");
+      }
+      
+      const res = await fetch(API_GATEWAY_URL, {
         method: 'GET',
         headers: { 
-          'Authorization': `Bearer ${token}`,
+          'Authorization': token,
           'Content-Type': 'application/json' 
         }
       });
       
       const data = await res.json();
       
+      // DEBUG: Log the exact body returned by Lambda
+      console.log("📦 Data received from Lambda:", data);
+      
       if (res.ok) {
-        setEmbedUrl(data.embedUrl);
+        const finalUrl = data.embed_url || data.embedUrl || data.EmbedUrl;
+        
+        if (finalUrl) {
+          console.log("✅ Embed URL successfully set.");
+          setEmbedUrl(finalUrl);
+        } else {
+          console.error("❌ Response OK but no URL key found. Check Lambda return keys!");
+        }
       } else {
-        alert("Session expired. Please log in again.");
-        setIsLoggedIn(false);
+        // Detailed error logging
+        console.error("❌ API Error. Check Lambda logs for this Request ID.");
+        console.table(data); // Shows error details in a nice table
+        
+        if (res.status === 401 || res.status === 403) {
+           console.error("🔒 Auth Error: Check if JWT secret matches Lambda Authorizer secret.");
+        }
+        
+        alert(`Error: ${data.message || "Session issue"}`);
       }
     } catch (error) {
-      console.error("Embedding failed", error);
+      // DEBUG: This usually catches CORS issues or Internet connectivity
+      console.error("🚨 Network/Fetch Exception:", error);
     } finally {
+      console.log("🏁 END: handleSend process finished.");
       setIsLoading(false);
     }
   };
@@ -110,7 +138,7 @@ function App() {
           <div className="max-w-3xl mx-auto">
             <ChatPanel onSend={handleSend} />
             <p className="text-center text-[10px] text-slate-600 mt-4 tracking-wide uppercase font-semibold">
-              Powered by AgoraCloud AI • Secured with RS256
+              Powered by AgoraCloud AI 
             </p>
           </div>
         </footer>

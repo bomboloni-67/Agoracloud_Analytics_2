@@ -1,6 +1,7 @@
 const mongoose = require('mongoose');
 const bcrypt = require('bcryptjs');
 
+// User.js
 const userSchema = new mongoose.Schema({
     email: { 
         type: String, 
@@ -10,7 +11,7 @@ const userSchema = new mongoose.Schema({
         trim: true 
     },
     password: { type: String, required: true }
-});
+}, { thumbnails: false }); 
 
 userSchema.pre('save', async function() {
     if (!this.isModified('password')) return;
