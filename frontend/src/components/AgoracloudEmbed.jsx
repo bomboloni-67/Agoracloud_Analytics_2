@@ -1,45 +1,43 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useEffect, useRef, memo } from 'react';
 import { createEmbeddingContext } from 'amazon-quicksight-embedding-sdk';
 
-export default function AgoracloudEmbed({ embedUrl, initialQuestion }) {
+const AgoracloudEmbed = memo(({ embedUrl }) => {
   const containerRef = useRef(null);
-  const frameRef = useRef(null);
-  const [isFrameReady, setIsFrameReady] = useState(false);
+  const contextRef = useRef(null);
 
   useEffect(() => {
     let isMounted = true;
     const embed = async () => {
       try {
-        const embeddingContext = await createEmbeddingContext();
+        if (!contextRef.current) {
+          contextRef.current = await createEmbeddingContext();
+        }
         if (!isMounted || !containerRef.current) return;
+
+        containerRef.current.innerHTML = ''; 
 
         const frameOptions = {
           url: embedUrl,
           container: containerRef.current,
           width: "100%",
-          height: "100%",
+          height: "100%", // The SDK fills the containerRef height
         };
 
         const contentOptions = {
           showPinboard: false,
+          showTopicName: false,
           allowFullscreen: false,
           panelOptions: {
-            panelType: 'SEARCH_BAR',
+            panelType: 'FULL',
             showQIcon: false,
           },
+          allowTopicSelection: false,
           themeOptions: {
             themeArn: 'arn:aws:quicksight:ap-southeast-1:074877414729:theme/agora-dark-theme'
-          },
-          // KEY FIX: Listen for when the frame is actually ready
-          onMessage: async (messageEvent) => {
-            if (messageEvent.eventName === 'CONTENT_LOADED') {
-              console.log("🎯 QuickSight is ready for questions");
-              setIsFrameReady(true);
-            }
           }
         };
 
-        frameRef.current = await embeddingContext.embedGenerativeQnA(frameOptions, contentOptions);
+        await contextRef.current.embedGenerativeQnA(frameOptions, contentOptions);
       } catch (error) {
         console.error("Embedding failed:", error);
       }
@@ -49,35 +47,22 @@ export default function AgoracloudEmbed({ embedUrl, initialQuestion }) {
     return () => { isMounted = false; };
   }, [embedUrl]);
 
-  // EFFECT 2: The "Guaranteed" Remote Control
-  useEffect(() => {
-    // Only send the question if the frame exists AND it has finished loading
-    if (frameRef.current && isFrameReady && initialQuestion) {
-      console.log("🚀 Injecting:", initialQuestion);
-      frameRef.current.setQuestion(initialQuestion);
-    }
-  }, [initialQuestion, isFrameReady]); // Watch both the question and the ready state
-
   return (
-    <div className="w-full h-full rounded-2xl overflow-hidden border border-slate-800 bg-[#020617] shadow-2xl relative">
-      {/* THE MASKING TRICK:
-          We pull the iframe UP by 85px to hide the QuickSight Search Bar + Ask Button.
-          We increase the height to compensate so the bottom isn't cut off.
-      */}
+    /* OUTER WRAPPER: Limits what is visible */
+    <div className="w-full h-full rounded-2xl border border-slate-800 bg-[#020617] overflow-hidden relative">
       <div 
         ref={containerRef} 
         style={{ 
-          height: 'calc(100% + 150px)', 
-          marginTop: '-85px' 
+          height: 'calc(100% + 35px)', 
+          width: '100%'
         }} 
-        className="w-full relative"
+        className="relative"
       />
-      
-      {/* Top Overlay: Ensures the hidden bar can't be "scrolled" into view */}
-      <div className="absolute top-0 left-0 w-full h-[5px] bg-[#020617] z-20" />
-      
-      {/* Bottom Mask: Covers the footer */}
-      <div className="absolute bottom-0 left-0 w-full h-[20px] bg-[#020617] z-10" />
+
+      {/* OPTIONAL: A subtle gradient at the bottom to make the "cut" look intentional */}
+      <div className="absolute bottom-0 left-0 w-full h-4 bg-gradient-to-t from-[#020617] to-transparent z-10 pointer-events-none" />
     </div>
   );
-}
+});
+
+export default AgoracloudEmbed;
