@@ -1,60 +1,83 @@
-import React, { useEffect, useRef } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { createEmbeddingContext } from 'amazon-quicksight-embedding-sdk';
 
 export default function AgoracloudEmbed({ embedUrl, initialQuestion }) {
   const containerRef = useRef(null);
-  // We use a ref to track the frame so it persists across renders/cleanups
-  const frameRef = useRef(null); 
+  const frameRef = useRef(null);
+  const [isFrameReady, setIsFrameReady] = useState(false);
 
   useEffect(() => {
-    let isMounted = true; // prevent setting state/refs on unmounted component
-
+    let isMounted = true;
     const embed = async () => {
       try {
         const embeddingContext = await createEmbeddingContext();
-        
-        // If user left the page while context was creating, stop here
-        if (!isMounted || !containerRef.current) return; 
+        if (!isMounted || !containerRef.current) return;
 
-        const embeddedFrame = await embeddingContext.embedGenerativeQnA({
+        const frameOptions = {
           url: embedUrl,
           container: containerRef.current,
           width: "100%",
           height: "100%",
-          initialQuestion: initialQuestion, 
-          theme: "dark", 
-        });
+        };
 
-        // Store in ref for cleanup
-        frameRef.current = embeddedFrame;
+        const contentOptions = {
+          showPinboard: false,
+          allowFullscreen: false,
+          panelOptions: {
+            panelType: 'SEARCH_BAR',
+            showQIcon: false,
+          },
+          themeOptions: {
+            themeArn: 'arn:aws:quicksight:ap-southeast-1:074877414729:theme/agora-dark-theme'
+          },
+          // KEY FIX: Listen for when the frame is actually ready
+          onMessage: async (messageEvent) => {
+            if (messageEvent.eventName === 'CONTENT_LOADED') {
+              console.log("🎯 QuickSight is ready for questions");
+              setIsFrameReady(true);
+            }
+          }
+        };
+
+        frameRef.current = await embeddingContext.embedGenerativeQnA(frameOptions, contentOptions);
       } catch (error) {
         console.error("Embedding failed:", error);
       }
     };
 
-    if (embedUrl) {
-      embed();
-    }
+    if (embedUrl) embed();
+    return () => { isMounted = false; };
+  }, [embedUrl]);
 
-    // CLEANUP FUNCTION
-    return () => {
-      isMounted = false;
-      if (frameRef.current) {
-        // Look up the specific close method in the SDK docs, usually .close()
-        // wrapping in try-catch is safe for external SDKs
-        try {
-            frameRef.current.close();
-        } catch (e) {
-            console.warn("Could not close frame:", e);
-        }
-        frameRef.current = null;
-      }
-    };
-  }, [embedUrl]); // Re-run if URL changes
+  // EFFECT 2: The "Guaranteed" Remote Control
+  useEffect(() => {
+    // Only send the question if the frame exists AND it has finished loading
+    if (frameRef.current && isFrameReady && initialQuestion) {
+      console.log("🚀 Injecting:", initialQuestion);
+      frameRef.current.setQuestion(initialQuestion);
+    }
+  }, [initialQuestion, isFrameReady]); // Watch both the question and the ready state
 
   return (
-    <div className="w-full h-full rounded-2xl overflow-hidden border border-slate-800 bg-[#0f172a]/20 shadow-2xl animate-in fade-in zoom-in-95 duration-700">
-      <div ref={containerRef} className="w-full h-full" />
+    <div className="w-full h-full rounded-2xl overflow-hidden border border-slate-800 bg-[#020617] shadow-2xl relative">
+      {/* THE MASKING TRICK:
+          We pull the iframe UP by 85px to hide the QuickSight Search Bar + Ask Button.
+          We increase the height to compensate so the bottom isn't cut off.
+      */}
+      <div 
+        ref={containerRef} 
+        style={{ 
+          height: 'calc(100% + 150px)', 
+          marginTop: '-85px' 
+        }} 
+        className="w-full relative"
+      />
+      
+      {/* Top Overlay: Ensures the hidden bar can't be "scrolled" into view */}
+      <div className="absolute top-0 left-0 w-full h-[5px] bg-[#020617] z-20" />
+      
+      {/* Bottom Mask: Covers the footer */}
+      <div className="absolute bottom-0 left-0 w-full h-[20px] bg-[#020617] z-10" />
     </div>
   );
 }
