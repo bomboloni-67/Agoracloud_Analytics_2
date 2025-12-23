@@ -30,7 +30,6 @@ export default function Login({ onLogin }) {
       const data = await response.json();
 
       if (response.ok) {
-        // Extract the part before the '@' to use as a display name
         const displayName = email.split('@')[0];
         const formattedName = displayName.charAt(0).toUpperCase() + displayName.slice(1);
         

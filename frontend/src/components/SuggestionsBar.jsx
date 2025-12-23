@@ -62,7 +62,6 @@ const SuggestionBar = ({ suggestions, onSend, activeTopicId }) => {
         )}
       </div>
 
-      {/* CSS for the scrollable area - add this to your global index.css or a style tag */}
       <style>{`
         .custom-scrollbar::-webkit-scrollbar {
           width: 4px;

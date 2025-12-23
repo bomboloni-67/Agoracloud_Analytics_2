@@ -5,14 +5,13 @@ import {
   MessageSquare, 
   Settings, 
   LogOut, 
-  Bell, 
   UserCircle, 
   Sparkles 
 } from 'lucide-react';
 
-const Sidebar = ({ signOut, username }) => {
+// Added activeTab and setActiveTab to props
+const Sidebar = ({ signOut, username, activeTab, setActiveTab }) => {
   const [isCollapsed, setIsCollapsed] = useState(false);
-  const [activeTab, setActiveTab] = useState('Ask Data');
 
   const menuItems = [
     { name: 'Ask Data', icon: <MessageSquare size={20} /> },
@@ -28,7 +27,6 @@ const Sidebar = ({ signOut, username }) => {
       {/* BRANDING HEADER */}
       <div className="p-4 border-b border-slate-100 dark:border-slate-800 flex flex-col items-center">
         <div className={`flex items-center w-full ${isCollapsed ? 'justify-center' : 'justify-between'} mb-2`}>
-          {/* Logo Container */}
           <div className="flex items-center space-x-3">
             <div className="bg-indigo-600 p-2 rounded-xl shadow-lg shadow-indigo-200 dark:shadow-none flex-shrink-0">
               <Sparkles size={18} className="text-white" />
@@ -46,7 +44,6 @@ const Sidebar = ({ signOut, username }) => {
             )}
           </div>
 
-          {/* Burger Menu Button (Visible when expanded) */}
           {!isCollapsed && (
             <button 
               onClick={() => setIsCollapsed(true)}
@@ -57,7 +54,6 @@ const Sidebar = ({ signOut, username }) => {
           )}
         </div>
 
-        {/* Menu Icon for Collapsed State */}
         {isCollapsed && (
           <button 
             onClick={() => setIsCollapsed(false)}
@@ -73,7 +69,8 @@ const Sidebar = ({ signOut, username }) => {
         {menuItems.map((item) => (
           <button
             key={item.name}
-            onClick={() => setActiveTab(item.name)}
+            // This now triggers the useEffect in App.jsx
+            onClick={() => setActiveTab(item.name)} 
             className={`w-full flex items-center p-3 rounded-xl transition-all group
               ${activeTab === item.name 
                 ? 'bg-indigo-50 text-indigo-600 dark:bg-indigo-900/30 dark:text-indigo-400' 
@@ -89,8 +86,6 @@ const Sidebar = ({ signOut, username }) => {
 
       {/* FOOTER: USER PROFILE & SIGN OUT */}
       <div className="p-4 border-t border-slate-100 dark:border-slate-800 space-y-2">
-        
-        {/* Clickable User Section */}
         <button className={`flex items-center w-full p-2 transition-all rounded-xl border group
           ${isCollapsed 
             ? 'justify-center border-transparent hover:bg-slate-100 dark:hover:bg-slate-800' 
@@ -115,7 +110,6 @@ const Sidebar = ({ signOut, username }) => {
           </div>
         </button>
 
-        {/* Sign Out */}
         <button
           onClick={signOut}
           className={`flex items-center w-full p-3 text-slate-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-xl transition-all

@@ -39,7 +39,6 @@ router.post('/register', async (req, res) => {
             })
         };
 
-        // 2. CREATE THE MISSING TOKEN HERE 🚀
         const token = jwt.sign(
             { user_id: newUser._id.toString(), email: newUser.email }, 
             process.env.JWT_SECRET, 
@@ -70,7 +69,7 @@ router.post('/login', async (req, res) => {
             process.env.JWT_SECRET, 
             { algorithm: 'HS256', expiresIn: '8h' }
         );
-        console.log("User ID from login:",user._id);
+        // console.log("User ID ",user._id);
 
         res.status(200).json({ token, email: user.email });
     } catch (err) {

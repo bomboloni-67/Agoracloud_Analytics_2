@@ -13,7 +13,7 @@ app.use(express.json());
 
 // Routes
 app.use('/api', authRoutes);
-// 2. MongoDB Connection Logic
+// MongoDB Connection Logic
 const MONGO_URI = process.env.MONGO_URI; 
 
 if (!MONGO_URI) {
@@ -23,14 +23,14 @@ if (!MONGO_URI) {
 
 mongoose.connect(MONGO_URI)
     .then(() => {
-        console.log("✅ Successfully connected to MongoDB");
+        console.log("connected to MongoDB");
         
         // 3. Only start the server once the DB is connected
         const PORT = process.env.PORT || 4000;
         app.listen(PORT, () => {
-            console.log(`🚀 Server running on port ${PORT}`);
+            console.log(`server port ${PORT}`);
         });
     })
     .catch((err) => {
-        console.error("❌ MongoDB connection error:", err.message);
+        console.error("MongoDB connection error:", err.message);
     });

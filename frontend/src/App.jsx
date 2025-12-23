@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect, useMemo } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import Sidebar from './components/Sidebar';
 import Login from './components/Login';
 import AgoracloudEmbed from './components/AgoracloudEmbed';
@@ -9,23 +9,41 @@ function App() {
   const [username, setUsername] = useState('');
   const [embedUrl, setEmbedUrl] = useState('');
   const [currentQuestion, setCurrentQuestion] = useState('');
-  const [currentLoadedTopicId, setCurrentLoadedTopicId] = useState('');
+  const [currentLoadedId, setCurrentLoadedId] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
-  const dropdownRef = useRef(null);
+  const [activeTab, setActiveTab] = useState('Ask Data'); 
   
+  const dropdownRef = useRef(null);
   const [suggestions, setSuggestions] = useState({ 
     What: [], Why: [], Who: [], When: [], Other: [] 
   });
 
+  // Hard coded topics and dashboard ids
   const availableTopics = [
-    { id: 'cYDn1dRMCtQaRlvEDOWvEFijOLdh1d6Q', name: 'Sales by Item', desc: 'Revenue & Volume metrics' },
-    { id: 'wuNA6kLYLAeUrlsEHl1rBwww2n0e8qvG', name: 'Inventory by Item (Alpro)', desc: 'Stock levels & SKU health' },
+    { 
+      id: 'cYDn1dRMCtQaRlvEDOWvEFijOLdh1d6Q', 
+      name: 'Sales by Item', 
+      desc: 'Revenue & Volume metrics' 
+    },
+    { 
+      id: 'wuNA6kLYLAeUrlsEHl1rBwww2n0e8qvG', 
+      name: 'Inventory by Item (Alpro)', 
+      desc: 'Stock levels & SKU health' 
+    },
   ];
 
-  const API_GATEWAY_URL = "https://ugzwp0xwdh.execute-api.ap-southeast-1.amazonaws.com/test/get-url";
+  const availableDashboards = [
+    { 
+      id: '1abefc0d-e34b-4323-b7a2-fdf06c8a10c3',
+      name: 'RFM Analysis (DEMO)',
+      desc: 'Recency, Frequency, Monetary Analysis'
+    }
+  ];
 
-  // Persistent dropdown click-outside logic
+  const API_GATEWAY_URL = import.meta.env.VITE_API_GATEWAY_URL;
+
+  // Close dropdown when clicking other areas
   useEffect(() => {
     function handleClickOutside(event) {
       if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
@@ -36,151 +54,159 @@ function App() {
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
+  // Reset view when switching sidebar tabs
+  useEffect(() => {
+    setEmbedUrl('');
+    setCurrentLoadedId('');
+    setCurrentQuestion('');
+  }, [activeTab]);
+
   const handleLogin = (user) => {
     setUsername(user);
     setIsLoggedIn(true);
   };
 
-  const handleSend = async (question, selectedTopicId) => {
-    const isTopicSwitch = currentLoadedTopicId !== selectedTopicId;
-    const needsInitialLoad = !embedUrl;
+  // Function to handle sending questions or loading dashboards.
+  const handleSend = async (question, selectedId) => {
+    setIsLoading(true);
+    setIsDropdownOpen(false); 
+    
+    try {
+      const token = localStorage.getItem('custom_jwt');
+      const mode = activeTab === 'Dashboards' ? 'DASHBOARD' : 'Q';
+      
+      // Select the ID from the correct list based on mode
+      const targetId = selectedId; 
 
-    if (needsInitialLoad || isTopicSwitch) {
-      setIsLoading(true);
-      setIsDropdownOpen(false); 
-      try {
-        const token = localStorage.getItem('custom_jwt');
-        const res = await fetch(`${API_GATEWAY_URL}?topicId=${selectedTopicId}`, {
-          headers: { 'Authorization': token }
-        });
-        const data = await res.json();
-        
-        if (res.ok) {
-          setSuggestions(data.suggestions || { What: [], Why: [], Who: [], When: [], Other: [] });
-          setCurrentQuestion(question || ''); 
-          setEmbedUrl(data.embed_url || data.EmbedUrl);
-          setCurrentLoadedTopicId(selectedTopicId); 
-        }
-      } catch (error) {
-        console.error("🚨 API Error:", error);
-      } finally {
-        setIsLoading(false);
+      const res = await fetch(`${API_GATEWAY_URL}?type=${mode}&id=${targetId}`, {
+        headers: { 'Authorization': token }
+      });
+      const data = await res.json();
+      
+      if (res.ok) {
+        setSuggestions(data.suggestions || { What: [], Why: [], Who: [], When: [], Other: [] });
+        setCurrentQuestion(question || ''); 
+        setEmbedUrl(data.embed_url);
+        setCurrentLoadedId(selectedId); 
       }
-    } else if (question) {
-      setCurrentQuestion(''); 
-      setTimeout(() => setCurrentQuestion(question), 10);
+    } catch (error) {
+      console.error("🚨 API Error:", error);
+    } finally {
+      setIsLoading(false);
     }
   };
 
-  const currentTopicName = availableTopics.find(t => t.id === currentLoadedTopicId)?.name || "Select Data Engine";
+  // Determine which list to display in the dropdown
+  const currentList = activeTab === 'Dashboards' ? availableDashboards : availableTopics;
+  
+  // Find the name of the currently selected item from the correct list
+  const currentSelectionName = currentList.find(item => item.id === currentLoadedId)?.name 
+    || (activeTab === 'Dashboards' ? "Select Dashboard" : "Select Data Engine");
 
   if (!isLoggedIn) return <Login onLogin={handleLogin} />;
 
   return (
     <div className="fixed inset-0 flex bg-[#020617] text-slate-100 overflow-hidden font-sans">
-      
       <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[1000px] h-[600px] bg-indigo-600/5 rounded-full blur-[120px] pointer-events-none"></div>
 
-      <Sidebar username={username} signOut={() => {
-        localStorage.removeItem('custom_jwt');
-        setIsLoggedIn(false);
-      }} />
+      <Sidebar 
+        username={username} 
+        activeTab={activeTab}
+        setActiveTab={setActiveTab}
+        signOut={() => {
+          localStorage.removeItem('custom_jwt');
+          setIsLoggedIn(false);
+        }} 
+      />
 
       <div className="flex-1 flex flex-col min-w-0 relative h-full">
         <main className="flex-1 flex flex-col min-h-0 overflow-hidden">
           <div className="max-w-7xl mx-auto w-full h-full px-8 pt-2 pb-6 flex flex-col min-h-0">
             
-            {/* --- SOURCE SWITCHER --- */}
-            {/*Keep this outside the main visualization container to prevent re-renders of the iframe */}
-            <div className="shrink-0 relative" ref={dropdownRef}>
-              <button 
-                onClick={() => setIsDropdownOpen(!isDropdownOpen)}
-                className="group flex items-center gap-4 px-5 py-3 bg-slate-900/40 border border-slate-800/60 rounded-2xl hover:border-indigo-500/40 transition-all duration-300 backdrop-blur-md shadow-xl"
-              >
-                <div className="flex flex-col items-start text-left">
-                  <span className="text-[9px] uppercase tracking-[0.2em] text-slate-500 font-bold mb-0.5">Source</span>
-                  <div className="flex items-center gap-2">
-                    <span className="text-[13px] font-bold text-slate-100 tracking-tight">{currentTopicName}</span>
-                    <svg className={`w-4 h-4 text-slate-500 transition-transform duration-300 ${isDropdownOpen ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7" />
-                    </svg>
+            <div className="flex items-center justify-between mb-4">
+              <div className="shrink-0 relative" ref={dropdownRef}>
+                <button 
+                  onClick={() => setIsDropdownOpen(!isDropdownOpen)}
+                  className="group flex items-center gap-4 px-5 py-3 bg-slate-900/40 border border-slate-800/60 rounded-2xl hover:border-indigo-500/40 transition-all duration-300 backdrop-blur-md shadow-xl"
+                >
+                  <div className="flex flex-col items-start text-left">
+                    <span className="text-[9px] uppercase tracking-[0.2em] text-slate-500 font-bold mb-0.5">
+                      {activeTab === 'Dashboards' ? 'QuickSight Dashboard' : 'Ask Data Topic'}
+                    </span>
+                    <div className="flex items-center gap-2">
+                      <span className="text-[13px] font-bold text-slate-100 tracking-tight">{currentSelectionName}</span>
+                      <svg className={`w-4 h-4 text-slate-500 transition-transform duration-300 ${isDropdownOpen ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7" />
+                      </svg>
+                    </div>
                   </div>
-                </div>
-              </button>
+                </button>
 
-              {/* DROPDOWN MENU */}
-              {isDropdownOpen && (
-                <div className="absolute top-full left-0 w-72 bg-slate-900/95 border border-slate-800 rounded-2xl shadow-[0_20px_50px_rgba(0,0,0,0.5)] backdrop-blur-2xl z-[100] overflow-hidden animate-in fade-in zoom-in-95 duration-200 origin-top">
-                  <div className="py-2">
-                    {availableTopics.map((topic) => (
-                      <button
-                        key={topic.id}
-                        onClick={() => handleSend('', topic.id)}
-                        className={`w-full flex items-center gap-4 px-5 py-4 transition-all hover:bg-indigo-500/5 text-left border-b border-slate-800/50 last:border-0 ${
-                          currentLoadedTopicId === topic.id ? "bg-indigo-500/10" : ""
-                        }`}
-                      >
-                        <div className={`w-8 h-8 rounded-lg flex items-center justify-center ${currentLoadedTopicId === topic.id ? "bg-indigo-500 text-white" : "bg-slate-800 text-slate-400"}`}>
-                          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 10V3L4 14h7v7l9-11h-7z" />
-                          </svg>
-                        </div>
-                        <div className="flex flex-col">
-                          <span className={`text-[11px] font-bold ${currentLoadedTopicId === topic.id ? "text-indigo-400" : "text-slate-200"}`}>{topic.name}</span>
-                          <span className="text-[9px] text-slate-500 uppercase tracking-wider">{topic.desc}</span>
-                        </div>
-                      </button>
-                    ))}
+                {isDropdownOpen && (
+                  <div className="absolute top-full left-0 w-72 bg-slate-900/95 border border-slate-800 rounded-2xl shadow-[0_20px_50px_rgba(0,0,0,0.5)] backdrop-blur-2xl z-[100] overflow-hidden animate-in fade-in zoom-in-95 duration-200 origin-top">
+                    <div className="py-2">
+                      {currentList.map((item) => (
+                        <button
+                          key={item.id}
+                          onClick={() => handleSend('', item.id)}
+                          className={`w-full flex items-center gap-4 px-5 py-4 transition-all hover:bg-indigo-500/5 text-left border-b border-slate-800/50 last:border-0 ${
+                            currentLoadedId === item.id ? "bg-indigo-500/10" : ""
+                          }`}
+                        >
+                          <div className={`w-8 h-8 rounded-lg flex items-center justify-center ${currentLoadedId === item.id ? "bg-indigo-50 text-white" : "bg-slate-800 text-slate-400"}`}>
+                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d={activeTab === 'Dashboards' ? "M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" : "M13 10V3L4 14h7v7l9-11h-7z"} />
+                            </svg>
+                          </div>
+                          <div className="flex flex-col">
+                            <span className={`text-[11px] font-bold ${currentLoadedId === item.id ? "text-indigo-400" : "text-slate-200"}`}>{item.name}</span>
+                            <span className="text-[9px] text-slate-500 uppercase tracking-wider">{item.desc}</span>
+                          </div>
+                        </button>
+                      ))}
+                    </div>
                   </div>
-                </div>
-              )}
+                )}
+              </div>
             </div>
 
-            {/* --- SUGGESTION BAR --- */}
-            {embedUrl && (
-              <div className="shrink-0 z-30">
+            {embedUrl && activeTab === 'Ask Data' && (
+              <div className="shrink-0 z-30 mb-4">
                 <SuggestionBar 
                   suggestions={suggestions} 
                   onSend={handleSend} 
-                  activeTopicId={currentLoadedTopicId} 
+                  activeTopicId={currentLoadedId} 
                 />
               </div>
             )}
 
-            {/* --- MAIN VISUALIZATION AREA --- */}
             <div className="flex-1 relative flex flex-col min-h-0 overflow-hidden">
-              
               {isLoading && (
                 <div className="absolute inset-0 z-[60] flex flex-col items-center justify-center bg-[#020617]/80 backdrop-blur-sm rounded-2xl">
                   <div className="w-10 h-10 border-2 border-indigo-500/20 border-t-indigo-500 rounded-full animate-spin mb-3"></div>
-                  <p className="text-[10px] uppercase tracking-[0.2em] text-indigo-400 font-bold">Initializing {currentTopicName}</p>
+                  <p className="text-[10px] uppercase tracking-[0.2em] text-indigo-400 font-bold">Loading {activeTab}...</p>
                 </div>
               )}
 
               {embedUrl ? (
-                <div className="flex-1 flex flex-col min-h-0 relative">
-                  <div className="flex items-center justify-between mb-2 px-2 shrink-0">
-                     <div className="flex items-center gap-3">
-                        <div className="w-2 h-2 bg-emerald-500 rounded-full animate-pulse shadow-[0_0_10px_rgba(16,185,129,0.5)]"></div>
-                        <span className="text-[10px] font-bold uppercase tracking-widest text-slate-400">Live Engine Session Active</span>
-                     </div>
-                  </div>
-                  
-                  <div key={currentLoadedTopicId} className="flex-1 w-full h-full relative z-10">
-                    <AgoracloudEmbed 
-                      embedUrl={embedUrl} 
-                      initialQuestion={currentQuestion}
-                    />
-                  </div>
+                <div key={`${currentLoadedId}-${activeTab}`} className="flex-1 flex flex-col min-h-0 relative">
+                  <AgoracloudEmbed 
+                    embedUrl={embedUrl} 
+                    activeTab={activeTab} 
+                  />
                 </div>
               ) : (
-                <div className="flex-1 flex flex-col items-center justify-center text-center">
+                <div className="flex-1 flex flex-col items-center justify-center text-center px-4">
                   <div className="relative w-20 h-20 bg-slate-900 border border-slate-800 rounded-3xl flex items-center justify-center shadow-2xl mb-6">
-                    <span className="text-4xl">🚀</span>
+                    <span className="text-4xl">{activeTab === 'Dashboards' ? '📊' : '🚀'}</span>
                   </div>
-                  <h1 className="text-2xl font-bold text-white tracking-tight mb-2">Welcome, {username}</h1>
+                  <h1 className="text-2xl font-bold text-white tracking-tight mb-2">
+                    {activeTab === 'Dashboards' ? 'Analytics Dashboards' : `Welcome, ${username}`}
+                  </h1>
                   <p className="text-slate-500 text-xs max-w-xs mx-auto leading-relaxed">
-                    Select an analytics engine from the menu above to begin.
+                    {activeTab === 'Dashboards' 
+                      ? 'Select a dashboard from the list to visualize your data.' 
+                      : 'Select a data engine to start asking questions.'}
                   </p>
                 </div>
               )}
