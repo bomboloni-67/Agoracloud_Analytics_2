@@ -155,16 +155,16 @@ function App() {
                             key={item.id}
                             onClick={() => handleSend('', item.id)}
                             className={`w-full flex items-center gap-4 px-5 py-4 transition-all hover:bg-indigo-500/5 text-left border-b border-slate-800/50 last:border-0 ${
-                              currentLoadedTopicId === item.id ? "bg-indigo-500/10" : ""
+                              currentLoadedId === item.id ? "bg-indigo-500/10" : ""
                             }`}
                           >
-                            <div className={`w-8 h-8 rounded-lg flex items-center justify-center ${currentLoadedTopicId === item.id ? "bg-indigo-50 text-white" : "bg-slate-800 text-slate-400"}`}>
+                            <div className={`w-8 h-8 rounded-lg flex items-center justify-center ${currentLoadedId === item.id ? "bg-indigo-50 text-white" : "bg-slate-800 text-slate-400"}`}>
                               <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d={activeTab === 'Dashboards' ? "M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" : "M13 10V3L4 14h7v7l9-11h-7z"} />
                               </svg>
                             </div>
                             <div className="flex flex-col">
-                              <span className={`text-[11px] font-bold ${currentLoadedTopicId === item.id ? "text-indigo-400" : "text-slate-200"}`}>{item.name}</span>
+                              <span className={`text-[11px] font-bold ${currentLoadedId === item.id ? "text-indigo-400" : "text-slate-200"}`}>{item.name}</span>
                               <span className="text-[9px] text-slate-500 uppercase tracking-wider">{item.desc}</span>
                             </div>
                           </button>
@@ -187,7 +187,7 @@ function App() {
                 <SuggestionBar 
                   suggestions={suggestions} 
                   onSend={handleSend} 
-                  activeTopicId={currentLoadedTopicId} 
+                  activeTopicId={currentLoadedId} 
                 />
               </div>
             )}
@@ -205,7 +205,7 @@ function App() {
               {activeTab === 'Settings' ? (
                 <Settings/>
               ) : embedUrl ? (
-                <div key={`${currentLoadedTopicId}-${activeTab}`} className="flex-1 flex flex-col min-h-0 relative">
+                <div key={`${currentLoadedId}-${activeTab}`} className="flex-1 flex flex-col min-h-0 relative">
                   <AgoracloudEmbed 
                     embedUrl={embedUrl} 
                     activeTab={activeTab} 
