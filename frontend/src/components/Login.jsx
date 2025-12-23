@@ -34,6 +34,7 @@ export default function Login({ onLogin }) {
         const formattedName = displayName.charAt(0).toUpperCase() + displayName.slice(1);
         
         localStorage.setItem('custom_jwt', data.token);
+        localStorage.setItem('user_email', email)
         onLogin(formattedName);
         
       } else {
