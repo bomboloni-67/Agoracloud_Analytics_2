@@ -1,34 +1,17 @@
-# Quicksuite Q&A Demo
+# AgoraCloud Analytics AI Engine
 
-This is a demo project for AWS Quicksight/Quicksuite generative Q&A feature.
+AgoraCloud is a high-performance analytics platform that bridges the gap between raw data and actionable insights. It features a dual-interface system: **Natural Language "Ask Data" discovery** and **High-fidelity QS Dashboards**, all secured via custom JWT authentication.
 
-## Setup
+## Architecture
 
-1. Install dependencies:
+The application follows a modern serverless architecture designed for scalability:
 
-   ```bash
-   cd backend && npm install
-   cd ../frontend && npm install
-   cd .. && npm install
-   ```
+1.  **Frontend:** React (Vite) + Tailwind CSS + Lucide Icons.
+2.  **Auth:** Custom JWT stored in `localStorage` for session persistence.
+3.  **Backend:** AWS API Gateway + AWS Lambda (Python/Node.js).
+4.  **Analytics Engine:** Amazon QuickSight (Q-Topics for discovery, Dashboards for reporting).
 
-2. Run the project:
 
-   ```bash
-   npm run dev
-   ```
 
-This will start the backend on port 4000 and frontend on port 5173.
 
-## AWS Integration
 
-Placeholders for AWS credentials in `backend/.env.example`. Add your keys and integrate with real Quicksight API.
-
-### AWS Cognito Setup
-
-To enable login and signup:
-
-1. Create a Cognito User Pool in AWS Console.
-2. Create an App Client.
-3. Update `frontend/src/aws-exports.js` with your User Pool ID and Client ID.
-4. The app will require authentication before accessing the Q&A interface.
