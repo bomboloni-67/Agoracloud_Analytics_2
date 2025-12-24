@@ -44,7 +44,6 @@ function App() {
 
   const API_GATEWAY_URL = import.meta.env.VITE_API_GATEWAY_URL;
 
-  // Close dropdown when clicking other areas
   useEffect(() => {
     function handleClickOutside(event) {
       if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
@@ -55,7 +54,6 @@ function App() {
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
-  // Reset view when switching sidebar tabs
   useEffect(() => {
     setEmbedUrl('');
     setCurrentLoadedId('');
@@ -67,8 +65,17 @@ function App() {
     setIsLoggedIn(true);
   };
 
-  // Function to handle sending questions or loading dashboards.
+  /**
+   * handleSend handles both loading new sources and sending questions.
+   */
   const handleSend = async (question, selectedId) => {
+    const targetId = selectedId || currentLoadedId;
+
+    if (question && targetId === currentLoadedId && activeTab === 'Ask Data') {
+      setCurrentQuestion(question);
+      return; 
+    }
+
     setIsLoading(true);
     setIsDropdownOpen(false); 
     
@@ -76,9 +83,6 @@ function App() {
       const token = localStorage.getItem('custom_jwt');
       const mode = activeTab === 'Dashboards' ? 'DASHBOARD' : 'Q';
       
-      // Select the ID from the correct list based on mode
-      const targetId = selectedId; 
-
       const res = await fetch(`${API_GATEWAY_URL}?type=${mode}&id=${targetId}`, {
         headers: { 'Authorization': token }
       });
@@ -88,7 +92,7 @@ function App() {
         setSuggestions(data.suggestions || { What: [], Why: [], Who: [], When: [], Other: [] });
         setCurrentQuestion(question || ''); 
         setEmbedUrl(data.embed_url);
-        setCurrentLoadedId(selectedId); 
+        setCurrentLoadedId(targetId); 
       }
     } catch (error) {
       console.error("🚨 API Error:", error);
@@ -97,10 +101,8 @@ function App() {
     }
   };
 
-  // Determine which list to display in the dropdown
   const currentList = activeTab === 'Dashboards' ? availableDashboards : availableTopics;
-  
-  // Find the name of the currently selected item from the correct list
+
   const currentSelectionName = currentList.find(item => item.id === currentLoadedId)?.name 
     || (activeTab === 'Dashboards' ? "Select Dashboard" : "Select Data Engine");
 
@@ -108,7 +110,6 @@ function App() {
 
   return (
     <div className="fixed inset-0 flex bg-[#020617] text-slate-100 overflow-hidden font-sans">
-      {/* Decorative Background Blur */}
       <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[1000px] h-[600px] bg-indigo-600/5 rounded-full blur-[120px] pointer-events-none"></div>
 
       <Sidebar 
@@ -126,7 +127,7 @@ function App() {
         <main className="flex-1 flex flex-col min-h-0 overflow-hidden">
           <div className="max-w-7xl mx-auto w-full h-full px-8 pt-2 pb-6 flex flex-col min-h-0">
             
-            {/* --- TOP BAR: Hide Source Switcher if in Settings --- */}
+            {/* TOP BAR */}
             <div className="flex items-center justify-between mb-4">
               {activeTab !== 'Settings' ? (
                 <div className="shrink-0 relative" ref={dropdownRef}>
@@ -181,7 +182,7 @@ function App() {
               )}
             </div>
 
-            {/* --- SUGGESTION BAR (Only show if in Ask Data mode and URL is loaded) --- */}
+            {/* SUGGESTION BAR */}
             {embedUrl && activeTab === 'Ask Data' && (
               <div className="shrink-0 z-30 mb-4">
                 <SuggestionBar 
@@ -192,7 +193,7 @@ function App() {
               </div>
             )}
 
-            {/* --- MAIN CONTENT AREA --- */}
+            {/* MAIN CONTENT AREA */}
             <div className="flex-1 relative flex flex-col min-h-0 overflow-hidden">
               {isLoading && (
                 <div className="absolute inset-0 z-[60] flex flex-col items-center justify-center bg-[#020617]/80 backdrop-blur-sm rounded-2xl">
@@ -201,18 +202,17 @@ function App() {
                 </div>
               )}
 
-              {/* CONDITIONAL RENDERING FOR CONTENT */}
               {activeTab === 'Settings' ? (
                 <Settings/>
               ) : embedUrl ? (
-                <div key={`${currentLoadedId}-${activeTab}`} className="flex-1 flex flex-col min-h-0 relative">
+                <div className="flex-1 flex flex-col min-h-0 relative">
                   <AgoracloudEmbed 
                     embedUrl={embedUrl} 
                     activeTab={activeTab} 
+                    initialQuestion={currentQuestion} 
                   />
                 </div>
               ) : (
-                /* Welcome Screen for Dashboards or Ask Data */
                 <div className="flex-1 flex flex-col items-center justify-center text-center px-4">
                   <div className="relative w-20 h-20 bg-slate-900 border border-slate-800 rounded-3xl flex items-center justify-center shadow-2xl mb-6">
                     <span className="text-4xl">{activeTab === 'Dashboards' ? '📊' : '🚀'}</span>
