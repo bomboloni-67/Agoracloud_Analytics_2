@@ -6,7 +6,8 @@ import {
   Settings, 
   LogOut, 
   UserCircle, 
-  Sparkles 
+  Sparkles,
+  BookOpen 
 } from 'lucide-react';
 
 // Added activeTab and setActiveTab to props
@@ -15,6 +16,7 @@ const Sidebar = ({ signOut, username, activeTab, setActiveTab }) => {
 
   const menuItems = [
     { name: 'Ask Data', icon: <MessageSquare size={20} /> },
+    { name: 'Stories', icon: <BookOpen size={20} /> },
     { name: 'Dashboards', icon: <LayoutDashboard size={20} /> },
     { name: 'Settings', icon: <Settings size={20} /> },
   ];

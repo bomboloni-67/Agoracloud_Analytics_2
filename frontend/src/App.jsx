@@ -58,6 +58,9 @@ function App() {
     setEmbedUrl('');
     setCurrentLoadedId('');
     setCurrentQuestion('');
+    if (activeTab === 'Stories') {
+      handleSend('', 'gallery');
+    }
   }, [activeTab]);
 
   const handleLogin = (user) => {
@@ -81,9 +84,15 @@ function App() {
     
     try {
       const token = localStorage.getItem('custom_jwt');
-      const mode = activeTab === 'Dashboards' ? 'DASHBOARD' : 'Q';
+      const modeMap = {
+        'Dashboards': 'DASHBOARD',
+        'Stories': 'STORIES',
+        'Ask Data': 'Q'
+      };
+      const mode = modeMap[activeTab];
       
-      const res = await fetch(`${API_GATEWAY_URL}?type=${mode}&id=${targetId}`, {
+      // For Stories, the 'id' can be a default value or ignored by the Lambda
+      const res = await fetch(`${API_GATEWAY_URL}?type=${mode}&id=${targetId || 'default'}`, {
         headers: { 'Authorization': token }
       });
       const data = await res.json();
@@ -127,9 +136,9 @@ function App() {
         <main className="flex-1 flex flex-col min-h-0 overflow-hidden">
           <div className="max-w-7xl mx-auto w-full h-full px-8 pt-2 pb-6 flex flex-col min-h-0">
             
-            {/* TOP BAR */}
+            {/* TOP BAR - Only show dropdown for Dashboards and Ask Data */}
             <div className="flex items-center justify-between mb-4">
-              {activeTab !== 'Settings' ? (
+              {activeTab === 'Dashboards' || activeTab === 'Ask Data' ? (
                 <div className="shrink-0 relative" ref={dropdownRef}>
                   <button 
                     onClick={() => setIsDropdownOpen(!isDropdownOpen)}
@@ -176,8 +185,14 @@ function App() {
                 </div>
               ) : (
                 <div className="flex flex-col">
-                  <h2 className="text-xl font-bold text-white tracking-tight">Account Settings</h2>
-                  <p className="text-slate-500 text-xs">Manage your profile and security preferences</p>
+                  <h2 className="text-xl font-bold text-white tracking-tight">
+                    {activeTab === 'Settings' ? 'Account Settings' : 'Data Stories'}
+                  </h2>
+                  <p className="text-slate-500 text-xs">
+                    {activeTab === 'Settings' 
+                      ? 'Manage your profile and security preferences' 
+                      : 'AI-generated narratives and insights'}
+                  </p>
                 </div>
               )}
             </div>
@@ -215,14 +230,18 @@ function App() {
               ) : (
                 <div className="flex-1 flex flex-col items-center justify-center text-center px-4">
                   <div className="relative w-20 h-20 bg-slate-900 border border-slate-800 rounded-3xl flex items-center justify-center shadow-2xl mb-6">
-                    <span className="text-4xl">{activeTab === 'Dashboards' ? '📊' : '🚀'}</span>
+                    <span className="text-4xl">
+                      {activeTab === 'Dashboards' ? '📊' : activeTab === 'Stories' ? '📖' : '🚀'}
+                    </span>
                   </div>
                   <h1 className="text-2xl font-bold text-white tracking-tight mb-2">
-                    {activeTab === 'Dashboards' ? 'Analytics Dashboards' : `Welcome, ${username}`}
+                    {activeTab === 'Dashboards' ? 'Analytics Dashboards' : activeTab === 'Stories' ? 'Data Stories' : `Welcome, ${username}`}
                   </h1>
                   <p className="text-slate-500 text-xs max-w-xs mx-auto leading-relaxed">
                     {activeTab === 'Dashboards' 
                       ? 'Select a dashboard from the list above to visualize your data.' 
+                      : activeTab === 'Stories'
+                      ? 'Access shared narratives or create new AI-powered stories.'
                       : 'Select a data engine from the menu to start asking questions.'}
                   </p>
                 </div>

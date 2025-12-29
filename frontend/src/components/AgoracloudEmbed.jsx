@@ -34,7 +34,12 @@ const AgoracloudEmbed = memo(({ embedUrl, activeTab, initialQuestion }) => {
             themeOptions: { themeArn }
           };
           embeddedExperienceRef.current = await contextRef.current.embedDashboard(frameOptions, dashboardOptions);
-        } else {
+        } else if (activeTab === 'Stories') {
+          const consoleOptions = {
+          };
+          embeddedExperienceRef.current = await contextRef.current.embedConsole(frameOptions, consoleOptions); 
+        }
+        else {
           const qnaOptions = {
             showTopicName: false,
             showPinboard: false,
