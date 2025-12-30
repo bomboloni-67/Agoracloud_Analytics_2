@@ -39,6 +39,11 @@ function App() {
       id: '1abefc0d-e34b-4323-b7a2-fdf06c8a10c3',
       name: 'RFM Analysis (DEMO)',
       desc: 'Recency, Frequency, Monetary Analysis'
+    },
+    {
+      id: 'be7beb03-c131-4cec-a7dc-4fbd58dc03d4',
+      name: 'Sales Performance (UC1)',
+      desc: 'Sales Performaance Dashboard'
     }
   ];
 
@@ -168,7 +173,7 @@ function App() {
                               currentLoadedId === item.id ? "bg-indigo-500/10" : ""
                             }`}
                           >
-                            <div className={`w-8 h-8 rounded-lg flex items-center justify-center ${currentLoadedId === item.id ? "bg-indigo-50 text-white" : "bg-slate-800 text-slate-400"}`}>
+                            <div className={`w-8 h-8 rounded-lg flex items-center justify-center ${currentLoadedId === item.id ? "bg-indigo-500/20 text-white" : "bg-slate-800 text-slate-400"}`}>
                               <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d={activeTab === 'Dashboards' ? "M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" : "M13 10V3L4 14h7v7l9-11h-7z"} />
                               </svg>

@@ -4,7 +4,14 @@ import { createEmbeddingContext } from 'amazon-quicksight-embedding-sdk';
 const AgoracloudEmbed = memo(({ embedUrl, activeTab, initialQuestion }) => {
   const containerRef = useRef(null);
   const contextRef = useRef(null);
-  const embeddedExperienceRef = useRef(null); // To store the Q instance
+  const embeddedExperienceRef = useRef(null);
+
+  /**
+   * PREBUILT THEMES:
+   * Midnight: arn:aws:quicksight::aws:theme/MIDNIGHT (Standard Dark)
+   * Obsidian: arn:aws:quicksight::aws:theme/OBSIDIAN (Pitch Black)
+   */
+  const themeArn = "arn:aws:quicksight::aws:theme/MIDNIGHT";
 
   useEffect(() => {
     let isMounted = true;
@@ -25,34 +32,31 @@ const AgoracloudEmbed = memo(({ embedUrl, activeTab, initialQuestion }) => {
           height: "100%",
         };
 
-        const themeArn = 'arn:aws:quicksight:ap-southeast-1:074877414729:theme/agora-dark-theme';
-        // const themeArn = "arn:aws:quicksight::aws:theme/MIDNIGHT";
-
-
         if (activeTab === 'Dashboards') {
-          const dashboardOptions = {
-            toolbarOptions: { export: true, undoRedo: false, reset: false },
+          embeddedExperienceRef.current = await contextRef.current.embedDashboard(frameOptions, {
+            toolbarOptions: { export: true, undoRedo: false, reset: false, executiveSummary: true },
             sheetOptions: { initialSheetId: undefined, singleSheet: false, emitSizeChangedEvent: true },
-            themeOptions: { themeArn }
-          };
-          embeddedExperienceRef.current = await contextRef.current.embedDashboard(frameOptions, dashboardOptions);
+            themeOptions: { themeArn } 
+          });
         } else if (activeTab === 'Stories') {
-          const consoleOptions = {
-            themeOptions: { themeArn }
-          };
-          embeddedExperienceRef.current = await contextRef.current.embedConsole(frameOptions, consoleOptions); 
-        }
-        else {
-          const qnaOptions = {
+          embeddedExperienceRef.current = await contextRef.current.embedConsole(frameOptions, {
+            toolbarOptions: {
+              executiveSummary: true,
+              dataQnA: false,
+              buildVisual: true,
+            },
+            themeOptions: { themeArn } // Applied here
+          }); 
+        } else {
+          embeddedExperienceRef.current = await contextRef.current.embedGenerativeQnA(frameOptions, {
             showTopicName: false,
             showPinboard: false,
             allowFullscreen: false,
             allowTopicSelection: false,
             initialQuestion: initialQuestion || undefined,
             panelOptions: { panelType: 'FULL', showQIcon: false },
-            themeOptions: { themeArn }
-          };
-          embeddedExperienceRef.current = await contextRef.current.embedGenerativeQnA(frameOptions, qnaOptions);
+            themeOptions: { themeArn } 
+          });
         }
       } catch (error) {
         console.error("Embedding failed:", error);
@@ -63,6 +67,7 @@ const AgoracloudEmbed = memo(({ embedUrl, activeTab, initialQuestion }) => {
     return () => { isMounted = false; };
   }, [embedUrl, activeTab]); 
 
+  // Fast-switch handler for suggestions
   useEffect(() => {
     if (activeTab === 'Ask Data' && embeddedExperienceRef.current && initialQuestion) {
       embeddedExperienceRef.current.setQuestion(initialQuestion);
@@ -81,6 +86,7 @@ const AgoracloudEmbed = memo(({ embedUrl, activeTab, initialQuestion }) => {
         }} 
         className="relative"
       />
+      {/* Bottom fade for smoother visual transition */}
       <div className="absolute bottom-0 left-0 w-full h-4 bg-gradient-to-t from-[#020617] to-transparent z-10 pointer-events-none" />
     </div>
   );
