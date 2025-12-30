@@ -113,7 +113,7 @@ function App() {
   const currentList = activeTab === 'Dashboards' ? availableDashboards : availableTopics;
 
   const currentSelectionName = currentList.find(item => item.id === currentLoadedId)?.name 
-    || (activeTab === 'Dashboards' ? "Select Dashboard" : "Select Data Engine");
+    || (activeTab === 'Dashboards' ? "Select Dashboard" : "Select Topic");
 
   if (!isLoggedIn) return <Login onLogin={handleLogin} />;
 
@@ -146,7 +146,7 @@ function App() {
                   >
                     <div className="flex flex-col items-start text-left">
                       <span className="text-[9px] uppercase tracking-[0.2em] text-slate-500 font-bold mb-0.5">
-                        {activeTab === 'Dashboards' ? 'QuickSight Dashboard' : 'Ask Data Topic'}
+                        {activeTab === 'Dashboards' ? ' Dashboard' : 'Topic'}
                       </span>
                       <div className="flex items-center gap-2">
                         <span className="text-[13px] font-bold text-slate-100 tracking-tight">{currentSelectionName}</span>

@@ -26,6 +26,8 @@ const AgoracloudEmbed = memo(({ embedUrl, activeTab, initialQuestion }) => {
         };
 
         const themeArn = 'arn:aws:quicksight:ap-southeast-1:074877414729:theme/agora-dark-theme';
+        // const themeArn = "arn:aws:quicksight::aws:theme/MIDNIGHT";
+
 
         if (activeTab === 'Dashboards') {
           const dashboardOptions = {
@@ -36,6 +38,7 @@ const AgoracloudEmbed = memo(({ embedUrl, activeTab, initialQuestion }) => {
           embeddedExperienceRef.current = await contextRef.current.embedDashboard(frameOptions, dashboardOptions);
         } else if (activeTab === 'Stories') {
           const consoleOptions = {
+            themeOptions: { themeArn }
           };
           embeddedExperienceRef.current = await contextRef.current.embedConsole(frameOptions, consoleOptions); 
         }
@@ -73,7 +76,7 @@ const AgoracloudEmbed = memo(({ embedUrl, activeTab, initialQuestion }) => {
       <div 
         ref={containerRef} 
         style={{ 
-          height: isQMode ? 'calc(100% + 35px)' : 'calc(100% + 10px)', 
+          height: isQMode ? 'calc(100% + 35px)' : 'calc(100% + 15px)', 
           width: '100%'
         }} 
         className="relative"

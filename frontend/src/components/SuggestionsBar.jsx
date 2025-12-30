@@ -10,7 +10,7 @@ const SuggestionBar = ({ suggestions, onSend, activeTopicId }) => {
   };
 
   return (
-    <div className="flex flex-col items-center w-full max-w-4xl mx-auto gap-4">
+    <div className="flex flex-col items-center w-full max-w-4xl mx-auto gap-4 -mb-4 -mt-6">
       
       {/* 1. CENTERED CATEGORY SELECTOR */}
       <div className="flex flex-wrap justify-center gap-2 px-4">
