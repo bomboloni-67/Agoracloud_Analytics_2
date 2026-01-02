@@ -28,7 +28,7 @@ function App() {
       desc: 'Revenue & Volume metrics' 
     },
     { 
-      id: 'wuNA6kLYLAeUrlsEHl1rBwww2n0e8qvG', 
+      id: 'YDTZk9p3ROgBAIk1oeF2uMoBarE6eZvo', 
       name: 'Inventory by Item (Alpro)', 
       desc: 'Stock levels & SKU health' 
     },
