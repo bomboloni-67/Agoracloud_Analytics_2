@@ -5,6 +5,29 @@ import AgoracloudEmbed from './components/AgoracloudEmbed';
 import SuggestionBar from './components/SuggestionsBar';
 import Settings from './components/Settings';
 
+const TOPIC_CONFIGS = {
+  'YDTZk9p3ROgBAIk1oeF2uMoBarE6eZvo': {
+    categories: ['Sales', 'Inventory', 'Supplier', 'Department', 'Others'],
+    rules: [
+      { key: 'Sales', keywords: ['sale', 'revenue', 'sold', 'profit', 'profitable', 'gp','sales'] },
+      { key: 'Inventory', keywords: ['stock', 'inventory', 'sku', 'on hand', 'availability','holding','hold'] },
+      { key: 'Supplier', keywords: ['supplier', 'vendor', 'manufacturer'] },
+      { key: 'Department', keywords: ['dept', 'department', 'category', 'division'] },
+    ],
+    defaultCategory: 'Other'
+  },
+  'DEFAULT': {
+    categories: ['What', 'Why', 'Who', 'When', 'Other'],
+    rules: [
+      { key: 'What', keywords: ['what'] },
+      { key: 'Why', keywords: ['why'] },
+      { key: 'Who', keywords: ['who'] },
+      { key: 'When', keywords: ['when', 'time', 'date', 'month', 'year'] },
+    ],
+    defaultCategory: 'Other'
+  }
+};
+
 function App() {
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [username, setUsername] = useState('');
@@ -16,38 +39,48 @@ function App() {
   const [activeTab, setActiveTab] = useState('Ask Data'); 
   
   const dropdownRef = useRef(null);
-  const [suggestions, setSuggestions] = useState({ 
-    What: [], Why: [], Who: [], When: [], Other: [] 
+
+  // Updated state to hold both the categories and the grouped questions
+  const [suggestionData, setSuggestionData] = useState({ 
+    keys: TOPIC_CONFIGS['DEFAULT'].categories,
+    grouped: { What: [], Why: [], Who: [], When: [], Other: [] } 
   });
 
-  // Hard coded topics and dashboard ids
   const availableTopics = [
-    { 
-      id: 'cYDn1dRMCtQaRlvEDOWvEFijOLdh1d6Q', 
-      name: 'Sales by Item', 
-      desc: 'Revenue & Volume metrics' 
-    },
-    { 
-      id: 'YDTZk9p3ROgBAIk1oeF2uMoBarE6eZvo', 
-      name: 'Inventory by Item (Alpro)', 
-      desc: 'Stock levels & SKU health' 
-    },
+    { id: 'cYDn1dRMCtQaRlvEDOWvEFijOLdh1d6Q', name: 'Sales by Item', desc: 'Revenue & Volume metrics' },
+    { id: 'YDTZk9p3ROgBAIk1oeF2uMoBarE6eZvo', name: 'Inventory by Item', desc: 'Stock levels & SKU health' },
   ];
 
   const availableDashboards = [
-    { 
-      id: '1abefc0d-e34b-4323-b7a2-fdf06c8a10c3',
-      name: 'RFM Analysis (DEMO)',
-      desc: 'Recency, Frequency, Monetary Analysis'
-    },
-    {
-      id: 'be7beb03-c131-4cec-a7dc-4fbd58dc03d4',
-      name: 'Sales Performance (UC1)',
-      desc: 'Sales Performaance Dashboard'
-    }
+    { id: '1abefc0d-e34b-4323-b7a2-fdf06c8a10c3', name: 'RFM Analysis (DEMO)', desc: 'Recency, Frequency, Monetary Analysis' },
+    { id: 'be7beb03-c131-4cec-a7dc-4fbd58dc03d4', name: 'Sales Performance (UC1)', desc: 'Sales Performaance Dashboard' }
   ];
 
   const API_GATEWAY_URL = import.meta.env.VITE_API_GATEWAY_URL;
+
+  const categorizeQuestions = (rawQuestions, topicId) => {
+    const config = TOPIC_CONFIGS[topicId] || TOPIC_CONFIGS['DEFAULT'];
+    
+    const grouped = config.categories.reduce((acc, cat) => {
+      acc[cat] = [];
+      return acc;
+    }, {});
+
+    rawQuestions.forEach((q) => {
+      const lowerQ = q.toLowerCase();
+      const matchedRule = config.rules.find(rule => 
+        rule.keywords.some(keyword => lowerQ.includes(keyword))
+      );
+
+      if (matchedRule) {
+        grouped[matchedRule.key].push(q);
+      } else {
+        grouped[config.defaultCategory].push(q);
+      }
+    });
+
+    return { keys: config.categories, grouped };
+  };
 
   useEffect(() => {
     function handleClickOutside(event) {
@@ -73,9 +106,6 @@ function App() {
     setIsLoggedIn(true);
   };
 
-  /**
-   * handleSend handles both loading new sources and sending questions.
-   */
   const handleSend = async (question, selectedId) => {
     const targetId = selectedId || currentLoadedId;
 
@@ -89,21 +119,20 @@ function App() {
     
     try {
       const token = localStorage.getItem('custom_jwt');
-      const modeMap = {
-        'Dashboards': 'DASHBOARD',
-        'Stories': 'STORIES',
-        'Ask Data': 'Q'
-      };
+      const modeMap = { 'Dashboards': 'DASHBOARD', 'Stories': 'STORIES', 'Ask Data': 'Q' };
       const mode = modeMap[activeTab];
       
-      // For Stories, the 'id' can be a default value or ignored by the Lambda
       const res = await fetch(`${API_GATEWAY_URL}?type=${mode}&id=${targetId || 'default'}`, {
         headers: { 'Authorization': token }
       });
       const data = await res.json();
       
       if (res.ok) {
-        setSuggestions(data.suggestions || { What: [], Why: [], Who: [], When: [], Other: [] });
+        // --- REFINED FRONTEND CATEGORIZATION ---
+        // data.suggestions is now a flat array of strings from the Lambda
+        const processed = categorizeQuestions(data.suggestions || [], targetId);
+        setSuggestionData(processed);
+        
         setCurrentQuestion(question || ''); 
         setEmbedUrl(data.embed_url);
         setCurrentLoadedId(targetId); 
@@ -116,7 +145,6 @@ function App() {
   };
 
   const currentList = activeTab === 'Dashboards' ? availableDashboards : availableTopics;
-
   const currentSelectionName = currentList.find(item => item.id === currentLoadedId)?.name 
     || (activeTab === 'Dashboards' ? "Select Dashboard" : "Select Topic");
 
@@ -141,7 +169,6 @@ function App() {
         <main className="flex-1 flex flex-col min-h-0 overflow-hidden">
           <div className="max-w-7xl mx-auto w-full h-full px-8 pt-2 pb-6 flex flex-col min-h-0">
             
-            {/* TOP BAR - Only show dropdown for Dashboards and Ask Data */}
             <div className="flex items-center justify-between mb-4">
               {activeTab === 'Dashboards' || activeTab === 'Ask Data' ? (
                 <div className="shrink-0 relative" ref={dropdownRef}>
@@ -194,26 +221,24 @@ function App() {
                     {activeTab === 'Settings' ? 'Account Settings' : 'Data Stories'}
                   </h2>
                   <p className="text-slate-500 text-xs">
-                    {activeTab === 'Settings' 
-                      ? 'Manage your profile and security preferences' 
-                      : 'AI-generated narratives and insights'}
+                    {activeTab === 'Settings' ? 'Manage your profile and security preferences' : 'AI-generated narratives and insights'}
                   </p>
                 </div>
               )}
             </div>
 
-            {/* SUGGESTION BAR */}
+            {/* SUGGESTION BAR - Using refined state and new categoryKeys prop */}
             {embedUrl && activeTab === 'Ask Data' && (
               <div className="shrink-0 z-30 mb-4">
                 <SuggestionBar 
-                  suggestions={suggestions} 
+                  suggestions={suggestionData.grouped} 
+                  categoryKeys={suggestionData.keys}
                   onSend={handleSend} 
                   activeTopicId={currentLoadedId} 
                 />
               </div>
             )}
 
-            {/* MAIN CONTENT AREA */}
             <div className="flex-1 relative flex flex-col min-h-0 overflow-hidden">
               {isLoading && (
                 <div className="absolute inset-0 z-[60] flex flex-col items-center justify-center bg-[#020617]/80 backdrop-blur-sm rounded-2xl">
