@@ -7,7 +7,7 @@ import Settings from './components/Settings';
 
 const TOPIC_CONFIGS = {
   'YDTZk9p3ROgBAIk1oeF2uMoBarE6eZvo': {
-    categories: ['Sales', 'Inventory', 'Supplier', 'Department', 'Others'],
+    categories: ['Sales', 'Inventory', 'Supplier', 'Department', 'Other'],
     rules: [
       { key: 'Sales', keywords: ['sale', 'revenue', 'sold', 'profit', 'profitable', 'gp','sales'] },
       { key: 'Inventory', keywords: ['stock', 'inventory', 'sku', 'on hand', 'availability','holding','hold'] },
@@ -60,27 +60,31 @@ function App() {
 
   const categorizeQuestions = (rawQuestions, topicId) => {
     const config = TOPIC_CONFIGS[topicId] || TOPIC_CONFIGS['DEFAULT'];
-    
-    const grouped = config.categories.reduce((acc, cat) => {
-      acc[cat] = [];
-      return acc;
-    }, {});
+        
+    const grouped = {};
+    config.categories.forEach(cat => { grouped[cat] = []; });
 
     rawQuestions.forEach((q) => {
-      const lowerQ = q.toLowerCase();
+      const lowerQ = typeof q === 'string' ? q.toLowerCase() : "";
       const matchedRule = config.rules.find(rule => 
         rule.keywords.some(keyword => lowerQ.includes(keyword))
       );
 
-      if (matchedRule) {
-        grouped[matchedRule.key].push(q);
-      } else {
-        grouped[config.defaultCategory].push(q);
-      }
-    });
+      // 3. The Fix: Ensure the key actually exists in 'grouped' before pushing
+      const targetKey = (matchedRule && grouped[matchedRule.key]) 
+        ? matchedRule.key 
+        : config.defaultCategory;
 
-    return { keys: config.categories, grouped };
-  };
+      if (grouped[targetKey]) {
+        grouped[targetKey].push(q);
+      } else {
+        // If even the defaultCategory is missing from the keys, initialize it on the fly
+        grouped[targetKey] = [q];
+      }
+  });
+
+  return { keys: Object.keys(grouped), grouped };
+};
 
   useEffect(() => {
     function handleClickOutside(event) {
