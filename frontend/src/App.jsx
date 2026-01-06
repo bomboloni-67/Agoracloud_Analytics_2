@@ -152,7 +152,7 @@ function App() {
   const currentSelectionName = currentList.find(item => item.id === currentLoadedId)?.name 
     || (activeTab === 'Dashboards' ? "Select Dashboard" : "Select Topic");
 
-  if (!isLoggedIn) return <Login onLogin={handleLogin} />;
+  if (!isLoggedIn) return <Login onLogin={handleLogin} apiUrl={API_GATEWAY_URL} />;
 
   return (
     <div className="fixed inset-0 flex bg-[#020617] text-slate-100 overflow-hidden font-sans">
