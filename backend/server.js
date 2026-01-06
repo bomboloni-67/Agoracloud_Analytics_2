@@ -8,7 +8,13 @@ const authRoutes = require('./routes/auth');
 const app = express();
 
 // Middleware
-app.use(cors());
+app.use(cors({
+    origin: [
+        'https://bomboloni-67/Agoracloud_Analytics_2.github.io', 
+        'http://localhost:5173' // Keep this for local testing
+    ],
+    credentials: true
+}));
 app.use(express.json());
 
 // Routes
