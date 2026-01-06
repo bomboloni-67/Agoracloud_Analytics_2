@@ -1,8 +1,6 @@
 import React, { useState } from 'react';
 
-const CATEGORIES = ['What', 'Why', 'Who', 'When', 'Other'];
-
-const SuggestionBar = ({ suggestions, onSend, activeTopicId }) => {
+const SuggestionBar = ({ suggestions, onSend, activeTopicId, categoryKeys = [] }) => {
   const [expandedCategory, setExpandedCategory] = useState(null);
 
   const handleCategoryClick = (category) => {
@@ -10,11 +8,12 @@ const SuggestionBar = ({ suggestions, onSend, activeTopicId }) => {
   };
 
   return (
-    <div className="flex flex-col items-center w-full max-w-4xl mx-auto gap-4">
+    <div className="flex flex-col items-center w-full max-w-4xl mx-auto gap-4 -mb-4 -mt-6">
       
-      {/* 1. CENTERED CATEGORY SELECTOR */}
+      {/* 1. DYNAMIC CATEGORY SELECTOR */}
       <div className="flex flex-wrap justify-center gap-2 px-4">
-        {CATEGORIES.map((category) => {
+        {categoryKeys.map((category) => {
+          // Check if this specific category in the suggestions object has data
           const hasQuestions = (suggestions[category] || []).length > 0;
           const isActive = expandedCategory === category;
 
@@ -46,6 +45,7 @@ const SuggestionBar = ({ suggestions, onSend, activeTopicId }) => {
                 <button
                   key={idx}
                   onClick={() => {
+                    // Triggers the SDK setQuestion logic in App.jsx
                     onSend(q, activeTopicId);
                     setExpandedCategory(null);
                   }}

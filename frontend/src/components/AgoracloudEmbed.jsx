@@ -1,23 +1,28 @@
 import React, { useEffect, useRef, memo } from 'react';
 import { createEmbeddingContext } from 'amazon-quicksight-embedding-sdk';
 
-const AgoracloudEmbed = memo(({ embedUrl, activeTab }) => {
+const AgoracloudEmbed = memo(({ embedUrl, activeTab, initialQuestion }) => {
   const containerRef = useRef(null);
   const contextRef = useRef(null);
+  const embeddedExperienceRef = useRef(null);
+
+  /**
+   * PREBUILT THEMES:
+   * Midnight: arn:aws:quicksight::aws:theme/MIDNIGHT (Standard Dark)
+   * Obsidian: arn:aws:quicksight::aws:theme/OBSIDIAN (Pitch Black)
+   */
+  const themeArn = "arn:aws:quicksight::aws:theme/MIDNIGHT";
 
   useEffect(() => {
     let isMounted = true;
     
     const embed = async () => {
       try {
-        // Initialize context once
         if (!contextRef.current) {
           contextRef.current = await createEmbeddingContext();
         }
         
         if (!isMounted || !containerRef.current) return;
-
-        // Clear previous iframe before re-embedding
         containerRef.current.innerHTML = ''; 
 
         const frameOptions = {
@@ -27,42 +32,31 @@ const AgoracloudEmbed = memo(({ embedUrl, activeTab }) => {
           height: "100%",
         };
 
-        const themeArn = 'arn:aws:quicksight:ap-southeast-1:074877414729:theme/agora-dark-theme';
-
-        // --- BRANCH LOGIC: DASHBOARD vs Q ---
         if (activeTab === 'Dashboards') {
-          // Dashboard Specific Options
-          const dashboardOptions = {
+          embeddedExperienceRef.current = await contextRef.current.embedDashboard(frameOptions, {
+            toolbarOptions: { export: true, undoRedo: false, reset: false, executiveSummary: true },
+            sheetOptions: { initialSheetId: undefined, singleSheet: false, emitSizeChangedEvent: true },
+            themeOptions: { themeArn } 
+          });
+        } else if (activeTab === 'Stories') {
+          embeddedExperienceRef.current = await contextRef.current.embedConsole(frameOptions, {
             toolbarOptions: {
-              export: true,
-              undoRedo: false,
-              reset: false,
+              executiveSummary: true,
+              dataQnA: false,
+              buildVisual: true,
             },
-            sheetOptions: {
-              initialSheetId: undefined, // Let QuickSight load the default sheet
-              singleSheet: false,        // Set true if you only want one page
-              emitSizeChangedEvent: true,
-            },
-            themeOptions: { themeArn }
-          };
-
-          await contextRef.current.embedDashboard(frameOptions, dashboardOptions);
-          
+            themeOptions: { themeArn } // Applied here
+          }); 
         } else {
-          // Generative Q&A Specific Options
-          const qnaOptions = {
+          embeddedExperienceRef.current = await contextRef.current.embedGenerativeQnA(frameOptions, {
             showTopicName: false,
             showPinboard: false,
             allowFullscreen: false,
             allowTopicSelection: false,
-            panelOptions: {
-              panelType: 'FULL',
-              showQIcon: false,
-            },
-            themeOptions: { themeArn }
-          };
-
-          await contextRef.current.embedGenerativeQnA(frameOptions, qnaOptions);
+            initialQuestion: initialQuestion || undefined,
+            panelOptions: { panelType: 'FULL', showQIcon: false },
+            themeOptions: { themeArn } 
+          });
         }
       } catch (error) {
         console.error("Embedding failed:", error);
@@ -70,26 +64,28 @@ const AgoracloudEmbed = memo(({ embedUrl, activeTab }) => {
     };
 
     if (embedUrl) embed();
-    
     return () => { isMounted = false; };
-  }, [embedUrl, activeTab]); // Re-run when URL or Tab changes
+  }, [embedUrl, activeTab]); 
 
-  // Determine if we need the height hack (+35px) for Q mode
-  const isQMode = activeTab === 'Ask Data';
+  // Fast-switch handler for suggestions
+  useEffect(() => {
+    if (activeTab === 'Ask Data' && embeddedExperienceRef.current && initialQuestion) {
+      embeddedExperienceRef.current.setQuestion(initialQuestion);
+    }
+  }, [initialQuestion, activeTab]);
 
   return (
     <div className="w-full h-full rounded-2xl border border-slate-800 bg-[#020617] overflow-hidden relative">
       <div 
         ref={containerRef} 
         style={{ 
-          // Only apply the +35px hack if in Q mode to hide the footer else use +10px for same hack in Dashboards
-          height: isQMode ? 'calc(100% + 35px)' : 'calc(100% + 10px)', 
+          height:'calc(100% + 35px)', 
           width: '100%'
         }} 
         className="relative"
       />
-
-     <div className="absolute bottom-0 left-0 w-full h-4 bg-gradient-to-t from-[#020617] to-transparent z-10 pointer-events-none" />
+      {/* Bottom fade for smoother visual transition */}
+      <div className="absolute bottom-0 left-0 w-full h-4 bg-gradient-to-t from-[#020617] to-transparent z-10 pointer-events-none" />
     </div>
   );
 });
