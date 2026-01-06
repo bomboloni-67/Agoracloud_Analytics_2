@@ -74,14 +74,12 @@ const AgoracloudEmbed = memo(({ embedUrl, activeTab, initialQuestion }) => {
     }
   }, [initialQuestion, activeTab]);
 
-  const isQMode = activeTab === 'Ask Data';
-
   return (
     <div className="w-full h-full rounded-2xl border border-slate-800 bg-[#020617] overflow-hidden relative">
       <div 
         ref={containerRef} 
         style={{ 
-          height: isQMode ? 'calc(100% + 35px)' : 'calc(100% + 15px)', 
+          height:'calc(100% + 35px)', 
           width: '100%'
         }} 
         className="relative"

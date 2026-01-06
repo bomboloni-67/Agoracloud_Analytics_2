@@ -169,9 +169,9 @@ function App() {
         }} 
       />
 
-      <div className="flex-1 flex flex-col min-w-0 relative h-full">
-        <main className="flex-1 flex flex-col min-h-0 overflow-hidden">
-          <div className="max-w-7xl mx-auto w-full h-full px-8 pt-2 pb-6 flex flex-col min-h-0">
+      <div className="flex-1 flex flex-col min-w-0 h-full overflow-hidden">
+        <main className="flex-1 flex flex-col min-h-0">
+          <div className="max-w-full mx-auto w-full h-full px-8 pt-2 pb-6 flex flex-col min-h-0">
             
             <div className="flex items-center justify-between mb-4">
               {activeTab === 'Dashboards' || activeTab === 'Ask Data' ? (
