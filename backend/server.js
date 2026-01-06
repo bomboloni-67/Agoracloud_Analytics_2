@@ -10,7 +10,7 @@ const app = express();
 // Middleware
 app.use(cors({
     origin: [
-        'https://bomboloni-67/Agoracloud_Analytics_2.github.io', 
+        'https://bomboloni-67.github.io', 
         'http://localhost:5173' // Keep this for local testing
     ],
     credentials: true
