@@ -13,12 +13,12 @@ The application follows a modern serverless architecture designed for scalabilit
 
 
 ## Installation and Running Guide
-'''bash
+```bash
 npm install
-'''
-'''bash
+```
+```bash
 npm run dev
-'''
+```
 
 
 
