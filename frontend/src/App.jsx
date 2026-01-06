@@ -57,6 +57,7 @@ function App() {
   ];
 
   const API_GATEWAY_URL = import.meta.env.VITE_API_GATEWAY_URL;
+  const API_MONGODB_URL = import.meta.env.VITE_API_MONGODB;
 
   const categorizeQuestions = (rawQuestions, topicId) => {
     const config = TOPIC_CONFIGS[topicId] || TOPIC_CONFIGS['DEFAULT'];
@@ -152,7 +153,7 @@ function App() {
   const currentSelectionName = currentList.find(item => item.id === currentLoadedId)?.name 
     || (activeTab === 'Dashboards' ? "Select Dashboard" : "Select Topic");
 
-  if (!isLoggedIn) return <Login onLogin={handleLogin} apiUrl={API_GATEWAY_URL} />;
+  if (!isLoggedIn) return <Login onLogin={handleLogin} apiUrl={API_MONGODB_URL} />;
 
   return (
     <div className="fixed inset-0 flex bg-[#020617] text-slate-100 overflow-hidden font-sans">
