@@ -85,15 +85,26 @@ function App() {
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
-  // When tab switches, if we don't have an ID loaded, trigger a "discovery" call
+  // AUTO-LOAD EFFECT
   useEffect(() => {
     setEmbedUrl('');
     setCurrentLoadedId('');
     setCurrentQuestion('');
     
-    // Initial discovery call to populate dropdowns if they are empty
     if (isLoggedIn) {
-       handleSend('', 'default');
+      const list = activeTab === 'Dashboards' ? availableDashboards : availableTopics;
+
+      if (activeTab === 'Stories') {
+        handleSend('', 'gallery');
+      } 
+      // If we already have a list in state (user navigated away and back), load the first one
+      else if (list && list.length > 0) {
+        handleSend('', list[0].id);
+      } 
+      // If list is empty (first login), do discovery which will trigger auto-load inside handleSend
+      else {
+        handleSend('', 'default');
+      }
     }
   }, [activeTab, isLoggedIn]);
 
@@ -103,7 +114,8 @@ function App() {
   };
 
   const handleSend = async (question, selectedId) => {
-    const targetId = selectedId || currentLoadedId;
+    const isDiscovery = selectedId === 'default' || (!selectedId && !currentLoadedId);
+    const targetId = selectedId || currentLoadedId || 'default';
 
     if (question && targetId === currentLoadedId && activeTab === 'Ask Data') {
       setCurrentQuestion(question);
@@ -118,27 +130,46 @@ function App() {
       const modeMap = { 'Dashboards': 'DASHBOARD', 'Stories': 'STORIES', 'Ask Data': 'Q' };
       const mode = modeMap[activeTab];
       
-      const res = await fetch(`${API_GATEWAY_URL}?type=${mode}&id=${targetId || 'default'}`, {
+      const res = await fetch(`${API_GATEWAY_URL}?type=${mode}&id=${targetId}`, {
         headers: { 'Authorization': token }
       });
-      const data = await res.json();
+      
+      // Use 'let' so we can re-assign this if we need to auto-load the first item
+      let data = await res.json();
       
       if (res.ok) {
-        // 1. UPDATE DYNAMIC LISTS FROM LAMBDA
+        // 1. Update list states
         if (data.available_dashboards) setAvailableDashboards(data.available_dashboards);
         if (data.available_topics) setAvailableTopics(data.available_topics);
+        
+        let finalId = targetId;
+        let finalEmbedUrl = data.embed_url;
 
-        // 2. CATEGORIZE QUESTIONS
-        const processed = categorizeQuestions(data.suggestions || [], targetId);
+        // 2. AUTO-LOAD LOGIC: If we called 'default' and got a list, immediately fetch the first item
+        if (isDiscovery) {
+          const newList = mode === 'DASHBOARD' ? data.available_dashboards : data.available_topics;
+          if (newList && newList.length > 0) {
+            finalId = newList[0].id;
+            
+            // Perform a second fetch to get the specific details/embed for the first item
+            const autoLoadRes = await fetch(`${API_GATEWAY_URL}?type=${mode}&id=${finalId}`, {
+              headers: { 'Authorization': token }
+            });
+            const autoLoadData = await autoLoadRes.json();
+            
+            finalEmbedUrl = autoLoadData.embed_url;
+            data = autoLoadData; // Overwrite data so categorization uses the first item's suggestions
+          }
+        }
+
+        // 3. Set UI State
+        const processed = categorizeQuestions(data.suggestions || [], finalId);
         setSuggestionData(processed);
-        
-        // 3. UPDATE EMBED
         setCurrentQuestion(question || ''); 
-        setEmbedUrl(data.embed_url);
+        setEmbedUrl(finalEmbedUrl);
         
-        // If we were just doing a 'default' discovery call, don't set currentLoadedId
-        if (targetId !== 'default') {
-            setCurrentLoadedId(targetId); 
+        if (finalId && finalId !== 'default') {
+          setCurrentLoadedId(finalId);
         }
       }
     } catch (error) {
@@ -156,6 +187,7 @@ function App() {
 
   return (
     <div className="fixed inset-0 flex bg-[#020617] text-slate-100 overflow-hidden font-sans">
+      {/* Background Glow */}
       <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[1000px] h-[600px] bg-indigo-600/5 rounded-full blur-[120px] pointer-events-none"></div>
 
       <Sidebar 
@@ -173,6 +205,7 @@ function App() {
         <main className="flex-1 flex flex-col min-h-0">
           <div className="max-w-full mx-auto w-full h-full px-8 pt-2 pb-6 flex flex-col min-h-0">
             
+            {/* Header / Dropdown Area */}
             <div className="flex items-center justify-between mb-4">
               {activeTab === 'Dashboards' || activeTab === 'Ask Data' ? (
                 <div className="shrink-0 relative" ref={dropdownRef}>
@@ -233,6 +266,7 @@ function App() {
               )}
             </div>
 
+            {/* Suggestions Bar */}
             {embedUrl && activeTab === 'Ask Data' && (
               <div className="shrink-0 z-30 mb-4">
                 <SuggestionBar 
@@ -244,6 +278,7 @@ function App() {
               </div>
             )}
 
+            {/* Main Content Area */}
             <div className="flex-1 relative flex flex-col min-h-0 overflow-hidden">
               {isLoading && (
                 <div className="absolute inset-0 z-[60] flex flex-col items-center justify-center bg-[#020617]/80 backdrop-blur-sm rounded-2xl">
