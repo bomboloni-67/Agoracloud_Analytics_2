@@ -37,31 +37,21 @@ function App() {
   const [isLoading, setIsLoading] = useState(false);
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const [activeTab, setActiveTab] = useState('Ask Data'); 
+  const [availableTopics, setAvailableTopics] = useState([]);
+  const [availableDashboards, setAvailableDashboards] = useState([]);
   
   const dropdownRef = useRef(null);
 
-  // Updated state to hold both the categories and the grouped questions
   const [suggestionData, setSuggestionData] = useState({ 
     keys: TOPIC_CONFIGS['DEFAULT'].categories,
     grouped: { What: [], Why: [], Who: [], When: [], Other: [] } 
   });
-
-  const availableTopics = [
-    { id: 'cYDn1dRMCtQaRlvEDOWvEFijOLdh1d6Q', name: 'Sales by Item', desc: 'Revenue & Volume metrics' },
-    { id: 'YDTZk9p3ROgBAIk1oeF2uMoBarE6eZvo', name: 'Inventory by Item', desc: 'Stock levels & SKU health' },
-  ];
-
-  const availableDashboards = [
-    { id: '1abefc0d-e34b-4323-b7a2-fdf06c8a10c3', name: 'RFM Analysis (DEMO)', desc: 'Recency, Frequency, Monetary Analysis' },
-    { id: 'be7beb03-c131-4cec-a7dc-4fbd58dc03d4', name: 'Sales Performance (UC1)', desc: 'Sales Performaance Dashboard' }
-  ];
 
   const API_GATEWAY_URL = import.meta.env.VITE_API_GATEWAY_URL;
   const API_MONGODB_URL = import.meta.env.VITE_API_MONGODB;
 
   const categorizeQuestions = (rawQuestions, topicId) => {
     const config = TOPIC_CONFIGS[topicId] || TOPIC_CONFIGS['DEFAULT'];
-        
     const grouped = {};
     config.categories.forEach(cat => { grouped[cat] = []; });
 
@@ -71,7 +61,6 @@ function App() {
         rule.keywords.some(keyword => lowerQ.includes(keyword))
       );
 
-      // 3. The Fix: Ensure the key actually exists in 'grouped' before pushing
       const targetKey = (matchedRule && grouped[matchedRule.key]) 
         ? matchedRule.key 
         : config.defaultCategory;
@@ -79,13 +68,12 @@ function App() {
       if (grouped[targetKey]) {
         grouped[targetKey].push(q);
       } else {
-        // If even the defaultCategory is missing from the keys, initialize it on the fly
         grouped[targetKey] = [q];
       }
-  });
+    });
 
-  return { keys: Object.keys(grouped), grouped };
-};
+    return { keys: Object.keys(grouped), grouped };
+  };
 
   useEffect(() => {
     function handleClickOutside(event) {
@@ -97,14 +85,17 @@ function App() {
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
+  // When tab switches, if we don't have an ID loaded, trigger a "discovery" call
   useEffect(() => {
     setEmbedUrl('');
     setCurrentLoadedId('');
     setCurrentQuestion('');
-    if (activeTab === 'Stories') {
-      handleSend('', 'gallery');
+    
+    // Initial discovery call to populate dropdowns if they are empty
+    if (isLoggedIn) {
+       handleSend('', 'default');
     }
-  }, [activeTab]);
+  }, [activeTab, isLoggedIn]);
 
   const handleLogin = (user) => {
     setUsername(user);
@@ -133,14 +124,22 @@ function App() {
       const data = await res.json();
       
       if (res.ok) {
-        // --- REFINED FRONTEND CATEGORIZATION ---
-        // data.suggestions is now a flat array of strings from the Lambda
+        // 1. UPDATE DYNAMIC LISTS FROM LAMBDA
+        if (data.available_dashboards) setAvailableDashboards(data.available_dashboards);
+        if (data.available_topics) setAvailableTopics(data.available_topics);
+
+        // 2. CATEGORIZE QUESTIONS
         const processed = categorizeQuestions(data.suggestions || [], targetId);
         setSuggestionData(processed);
         
+        // 3. UPDATE EMBED
         setCurrentQuestion(question || ''); 
         setEmbedUrl(data.embed_url);
-        setCurrentLoadedId(targetId); 
+        
+        // If we were just doing a 'default' discovery call, don't set currentLoadedId
+        if (targetId !== 'default') {
+            setCurrentLoadedId(targetId); 
+        }
       }
     } catch (error) {
       console.error("🚨 API Error:", error);
@@ -196,8 +195,10 @@ function App() {
 
                   {isDropdownOpen && (
                     <div className="absolute top-full left-0 w-72 bg-slate-900/95 border border-slate-800 rounded-2xl shadow-[0_20px_50px_rgba(0,0,0,0.5)] backdrop-blur-2xl z-[100] overflow-hidden animate-in fade-in zoom-in-95 duration-200 origin-top">
-                      <div className="py-2">
-                        {currentList.map((item) => (
+                      <div className="py-2 max-h-[400px] overflow-y-auto custom-scrollbar">
+                        {currentList.length === 0 ? (
+                           <div className="px-5 py-4 text-[10px] text-slate-500 uppercase tracking-widest text-center">No Assets Found</div>
+                        ) : currentList.map((item) => (
                           <button
                             key={item.id}
                             onClick={() => handleSend('', item.id)}
@@ -212,7 +213,7 @@ function App() {
                             </div>
                             <div className="flex flex-col">
                               <span className={`text-[11px] font-bold ${currentLoadedId === item.id ? "text-indigo-400" : "text-slate-200"}`}>{item.name}</span>
-                              <span className="text-[9px] text-slate-500 uppercase tracking-wider">{item.desc}</span>
+                              <span className="text-[9px] text-slate-500 uppercase tracking-wider line-clamp-1">{item.id}</span>
                             </div>
                           </button>
                         ))}
@@ -232,7 +233,6 @@ function App() {
               )}
             </div>
 
-            {/* SUGGESTION BAR - Using refined state and new categoryKeys prop */}
             {embedUrl && activeTab === 'Ask Data' && (
               <div className="shrink-0 z-30 mb-4">
                 <SuggestionBar 
@@ -253,7 +253,7 @@ function App() {
               )}
 
               {activeTab === 'Settings' ? (
-                <Settings/>
+                <Settings apiUrl={API_MONGODB_URL}/>
               ) : embedUrl ? (
                 <div className="flex-1 flex flex-col min-h-0 relative">
                   <AgoracloudEmbed 

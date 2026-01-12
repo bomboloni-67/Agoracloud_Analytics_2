@@ -1,6 +1,6 @@
 import { useState } from 'react';
 
-const Settings = () => {
+const Settings = ( { apiUrl } ) => {
   const [formData, setFormData] = useState({
     oldPassword: '',
     newPassword: '',
@@ -21,9 +21,12 @@ const Settings = () => {
 
     setIsSubmitting(true);
 
+    const endpoint = '/auth/change-password';
+    const fullUrl = `${apiUrl}${endpoint}`;
+
     try {
       // 2. API Call to your Node.js backend
-      const response = await fetch('http://localhost:4000/api/auth/change-password', {
+      const response = await fetch(fullUrl, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
