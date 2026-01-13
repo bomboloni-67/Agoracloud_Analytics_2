@@ -19,7 +19,10 @@ export default function Login({ onLogin, apiUrl}) {
     }
 
     const endpoint = isSignup ? '/auth/register' : '/auth/login';
-    const fullUrl = `${apiUrl}${endpoint}`;
+
+    // For local host or
+    // const fullUrl = `${apiUrl}${endpoint}`;
+    const fullUrl = `http://localhost:4000/api${endpoint}`;
 
     try {
       const response = await fetch(fullUrl, {
