@@ -36,7 +36,7 @@ const AgoracloudEmbed = memo(({ embedUrl, activeTab, initialQuestion }) => {
           embeddedExperienceRef.current = await contextRef.current.embedDashboard(frameOptions, {
             toolbarOptions: { export: true, undoRedo: false, reset: false, executiveSummary: true },
             sheetOptions: { initialSheetId: undefined, singleSheet: false, emitSizeChangedEvent: true },
-            themeOptions: { themeArn } 
+            // themeOptions: { themeArn } 
           });
         } else if (activeTab === 'Stories') {
           embeddedExperienceRef.current = await contextRef.current.embedConsole(frameOptions, {
@@ -45,7 +45,7 @@ const AgoracloudEmbed = memo(({ embedUrl, activeTab, initialQuestion }) => {
               dataQnA: false,
               buildVisual: true,
             },
-            themeOptions: { themeArn } // Applied here
+            // themeOptions: { themeArn }
           }); 
         } else {
           embeddedExperienceRef.current = await contextRef.current.embedGenerativeQnA(frameOptions, {
@@ -55,7 +55,7 @@ const AgoracloudEmbed = memo(({ embedUrl, activeTab, initialQuestion }) => {
             allowTopicSelection: false,
             initialQuestion: initialQuestion || undefined,
             panelOptions: { panelType: 'FULL', showQIcon: false },
-            themeOptions: { themeArn } 
+            // themeOptions: { themeArn } 
           });
         }
       } catch (error) {

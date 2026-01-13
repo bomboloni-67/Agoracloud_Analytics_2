@@ -37,7 +37,7 @@ const Sidebar = ({ signOut, username, activeTab, setActiveTab }) => {
             {!isCollapsed && (
               <div className="animate-in fade-in duration-300">
                 <h1 className="text-[12px] font-bold tracking-tight text-slate-800 dark:text-slate-100 uppercase leading-none">
-                  AgoraCloud <span className="text-indigo-600 dark:text-indigo-400">Analytics</span>
+                  Azuracloud <span className="text-indigo-600 dark:text-indigo-400">Analytics</span>
                 </h1>
                 <p className="text-[9px] text-slate-500 font-medium uppercase tracking-widest mt-1">
                   AI Engine

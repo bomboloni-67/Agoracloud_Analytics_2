@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { User, Lock, Sparkles, ArrowRight } from 'lucide-react';
 
-export default function Login({ onLogin }) {
+export default function Login({ onLogin, apiUrl}) {
   const [isSignup, setIsSignup] = useState(false);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -18,10 +18,14 @@ export default function Login({ onLogin }) {
       return;
     }
 
-    const endpoint = isSignup ? '/api/register' : '/api/login';
+    const endpoint = isSignup ? '/auth/register' : '/auth/login';
+
+    // For local host or
+    // const fullUrl = `${apiUrl}${endpoint}`;
+    const fullUrl = `http://localhost:4000/api${endpoint}`;
 
     try {
-      const response = await fetch(`http://localhost:4000${endpoint}`, {
+      const response = await fetch(fullUrl, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email, password }),
