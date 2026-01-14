@@ -12,7 +12,7 @@ const TOPIC_CONFIGS = {
     rules: [
       { key: 'Sales', keywords: ['sale', 'revenue', 'sold', 'profit', 'profitable', 'gp','sales'] },
       { key: 'Inventory', keywords: ['stock', 'inventory', 'sku', 'on hand', 'availability','holding','hold'] },
-      { key: 'Supplier', keywords: ['supplier', 'vendor', 'manufacturer'] },
+      { key: 'Supplier', keywords: ['supplier', 'vendor'] },
       { key: 'Department', keywords: ['dept', 'department', 'category', 'division'] },
     ],
     defaultCategory: 'Other'
@@ -58,13 +58,19 @@ function App() {
 
     rawQuestions.forEach((q) => {
       const lowerQ = typeof q === 'string' ? q.toLowerCase() : "";
-      const matchedRule = config.rules.find(rule => 
+      const matchedRule = config.rules.filter(rule => 
         rule.keywords.some(keyword => lowerQ.includes(keyword))
       );
-      const targetKey = (matchedRule && grouped[matchedRule.key]) 
-        ? matchedRule.key 
-        : config.defaultCategory;
-      if (grouped[targetKey]) grouped[targetKey].push(q);
+      if (matchedRule.length > 0){
+          matchedRule.forEach(rule => {
+          if (grouped[rule.key]){
+            grouped[rule.key].push(q);
+          }
+        });
+      }
+      else{
+        if (grouped[config.defaultCategory]) grouped[config.defaultCategory].push(q);
+      }
     });
     return { keys: Object.keys(grouped), grouped };
   };
