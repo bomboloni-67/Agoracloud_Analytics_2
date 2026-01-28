@@ -5,6 +5,11 @@ import AgoracloudEmbed from './components/AgoracloudEmbed';
 import SuggestionBar from './components/SuggestionsBar';
 import Settings from './components/Settings';
 import DashboardGallery from './components/DashboardGallery';
+import { Authenticator, useAuthenticator } from '@aws-amplify/ui-react';
+import { fetchAuthSession, signOut } from 'aws-amplify/auth';
+
+
+
 
 const TOPIC_CONFIGS = {
   'YDTZk9p3ROgBAIk1oeF2uMoBarE6eZvo': {
@@ -30,8 +35,13 @@ const TOPIC_CONFIGS = {
 };
 
 function App() {
-  const [isLoggedIn, setIsLoggedIn] = useState(false);
-  const [username, setUsername] = useState('');
+  // const [isLoggedIn, setIsLoggedIn] = useState(false);
+  // const [username, setUsername] = useState('');
+
+  const { user, authStatus } = useAuthenticator(context => [context.user]);
+  const isLoggedIn = authStatus === 'authenticated';
+  const username = user?.signInDetails?.loginId || '';
+
   const [embedUrl, setEmbedUrl] = useState('');
   const [currentQuestion, setCurrentQuestion] = useState('');
   const [currentLoadedId, setCurrentLoadedId] = useState('');
@@ -75,6 +85,19 @@ function App() {
     return { keys: Object.keys(grouped), grouped };
   };
 
+  // --- HELPER: GET COGNITO TOKEN ---
+    const getAuthToken = async () => {
+    try {
+      const session = await fetchAuthSession();
+      // We use idToken because it contains the 'custom:qs_user_id' claim
+      return session.tokens.idToken.toString();
+    } catch (err) {
+      console.error("No session found", err);
+      return null;
+    }
+  };
+
+
   // --- EFFECT: DISCOVERY ON LOGIN ---
   useEffect(() => {
     if (isLoggedIn) {
@@ -86,7 +109,11 @@ function App() {
 
   const fetchDiscoveryData = async (mode) => {
     try {
-      const token = localStorage.getItem('custom_jwt');
+      // const token = localStorage.getItem('custom_jwt');
+
+      const token = await getAuthToken();
+      if(!token) return;
+
       const res = await fetch(`${API_GATEWAY_URL}?type=${mode}&id=default`, {
         headers: { 'Authorization': token }
       });
@@ -133,10 +160,10 @@ function App() {
   }, [activeTab, isLoggedIn]);
 
   // --- HANDLERS ---
-  const handleLogin = (user) => {
-    setUsername(user);
-    setIsLoggedIn(true);
-  };
+  // const handleLogin = (user) => {
+  //   setUsername(user);
+  //   setIsLoggedIn(true);
+  // };
 
   const handleSend = async (question, selectedId) => {
     const isDiscovery = selectedId === 'default' || (!selectedId && !currentLoadedId);
@@ -151,7 +178,8 @@ function App() {
     setIsDropdownOpen(false); 
     
     try {
-      const token = localStorage.getItem('custom_jwt');
+      // const token = localStorage.getItem('custom_jwt');
+      const token = await getAuthToken(); 
       const modeMap = { 'Dashboards': 'DASHBOARD', 'Stories': 'STORIES', 'Ask Data': 'Q' };
       const mode = modeMap[activeTab];
       
@@ -198,7 +226,8 @@ function App() {
   const currentList = activeTab === 'Dashboards' ? availableDashboards : availableTopics;
   const currentSelectionName = currentList.find(item => item.id === currentLoadedId)?.name || "Select Topic";
 
-  if (!isLoggedIn) return <Login onLogin={handleLogin} apiUrl={API_MONGODB_URL} />;
+  // if (!isLoggedIn) return <Login onLogin={handleLogin} apiUrl={API_MONGODB_URL} />;
+  if (!isLoggedIn) return <Authenticator />;
 
   return (
     <div className="fixed inset-0 flex bg-[#020617] text-slate-100 overflow-hidden font-sans">
@@ -208,11 +237,13 @@ function App() {
         username={username} 
         activeTab={activeTab}
         setActiveTab={setActiveTab}
-        signOut={() => {
-          localStorage.removeItem('custom_jwt');
-          localStorage.removeItem('user_email');
-          setIsLoggedIn(false);
-        }} 
+        signOut={() => signOut()
+          // {
+          // localStorage.removeItem('custom_jwt');
+          // localStorage.removeItem('user_email');
+          // setIsLoggedIn(false);
+          // }
+        } 
       />
 
       <div className="flex-1 flex flex-col min-w-0 h-full overflow-hidden">
