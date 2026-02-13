@@ -6,10 +6,7 @@ import SuggestionBar from './components/SuggestionsBar';
 import Settings from './components/Settings';
 import DashboardGallery from './components/DashboardGallery';
 import { Authenticator, useAuthenticator } from '@aws-amplify/ui-react';
-import { fetchAuthSession, signOut } from 'aws-amplify/auth';
-
-
-
+import { fetchAuthSession, signOut, signInWithRedirect } from 'aws-amplify/auth';
 
 const TOPIC_CONFIGS = {
   'YDTZk9p3ROgBAIk1oeF2uMoBarE6eZvo': {
@@ -35,13 +32,11 @@ const TOPIC_CONFIGS = {
 };
 
 function App() {
-  // const [isLoggedIn, setIsLoggedIn] = useState(false);
-  // const [username, setUsername] = useState('');
-
   const { user, authStatus } = useAuthenticator(context => [context.user]);
   const isLoggedIn = authStatus === 'authenticated';
-  const username = user?.signInDetails?.loginId || '';
-
+  
+  // Use userEmail state as the primary display name and identity for requests
+  const [userEmail, setUserEmail] = useState('');
   const [embedUrl, setEmbedUrl] = useState('');
   const [currentQuestion, setCurrentQuestion] = useState('');
   const [currentLoadedId, setCurrentLoadedId] = useState('');
@@ -50,6 +45,7 @@ function App() {
   const [activeTab, setActiveTab] = useState('Ask Data'); 
   const [availableTopics, setAvailableTopics] = useState([]);
   const [availableDashboards, setAvailableDashboards] = useState([]);
+  const displayUsername = userEmail.match(/^[^@]+/)?.[0] || 'User';
   
   const dropdownRef = useRef(null);
   const [suggestionData, setSuggestionData] = useState({ 
@@ -86,10 +82,9 @@ function App() {
   };
 
   // --- HELPER: GET COGNITO TOKEN ---
-    const getAuthToken = async () => {
+  const getAuthToken = async () => {
     try {
       const session = await fetchAuthSession();
-      // We use idToken because it contains the 'custom:qs_user_id' claim
       return session.tokens.idToken.toString();
     } catch (err) {
       console.error("No session found", err);
@@ -97,24 +92,36 @@ function App() {
     }
   };
 
-
-  // --- EFFECT: DISCOVERY ON LOGIN ---
+  // --- EFFECT: IDENTITY & DISCOVERY ---
   useEffect(() => {
     if (isLoggedIn) {
-      // Fetch initial lists for both modes
-      fetchDiscoveryData('Q');
-      fetchDiscoveryData('DASHBOARD');
+      const initializeUser = async () => {
+        try {
+          const session = await fetchAuthSession();
+          const email = session.tokens?.idToken?.payload?.email;
+          
+          if (email) {
+            setUserEmail(email);
+            // Trigger discovery ONLY after email is confirmed
+            fetchDiscoveryData('Q');
+            fetchDiscoveryData('DASHBOARD');
+          }
+        } catch (err) {
+          console.error("Failed to initialize user identity", err);
+        }
+      };
+
+      initializeUser();
     }
   }, [isLoggedIn]);
 
   const fetchDiscoveryData = async (mode) => {
     try {
-      // const token = localStorage.getItem('custom_jwt');
-
       const token = await getAuthToken();
       if(!token) return;
 
-      const res = await fetch(`${API_GATEWAY_URL}?type=${mode}&id=default`, {
+      // Pass userEmail as a fallback query param to assist the Lambda's internal logic
+      const res = await fetch(`${API_GATEWAY_URL}?type=${mode}&id=default&user_id=${userEmail}`, {
         headers: { 'Authorization': token }
       });
       const data = await res.json();
@@ -144,7 +151,8 @@ function App() {
     setCurrentLoadedId('');
     setCurrentQuestion('');
     
-    if (isLoggedIn) {
+    // Ensure we only try to load if identity is ready
+    if (isLoggedIn && userEmail) {
       if (activeTab === 'Dashboards') return;
       
       if (activeTab === 'Stories') {
@@ -157,14 +165,9 @@ function App() {
         }
       }
     }
-  }, [activeTab, isLoggedIn]);
+  }, [activeTab, isLoggedIn, userEmail]);
 
   // --- HANDLERS ---
-  // const handleLogin = (user) => {
-  //   setUsername(user);
-  //   setIsLoggedIn(true);
-  // };
-
   const handleSend = async (question, selectedId) => {
     const isDiscovery = selectedId === 'default' || (!selectedId && !currentLoadedId);
     const targetId = selectedId || currentLoadedId || 'default';
@@ -178,12 +181,11 @@ function App() {
     setIsDropdownOpen(false); 
     
     try {
-      // const token = localStorage.getItem('custom_jwt');
       const token = await getAuthToken(); 
       const modeMap = { 'Dashboards': 'DASHBOARD', 'Stories': 'STORIES', 'Ask Data': 'Q' };
       const mode = modeMap[activeTab];
       
-      const res = await fetch(`${API_GATEWAY_URL}?type=${mode}&id=${targetId}`, {
+      const res = await fetch(`${API_GATEWAY_URL}?type=${mode}&id=${targetId}&user_id=${userEmail}`, {
         headers: { 'Authorization': token }
       });
       
@@ -196,12 +198,11 @@ function App() {
         let finalId = targetId;
         let finalEmbedUrl = data.embed_url;
 
-        // Auto-load 'Ask Data' discovery
         if (isDiscovery && activeTab === 'Ask Data') {
           const newList = data.available_topics;
           if (newList && newList.length > 0) {
             finalId = newList[0].id;
-            const autoLoadRes = await fetch(`${API_GATEWAY_URL}?type=${mode}&id=${finalId}`, {
+            const autoLoadRes = await fetch(`${API_GATEWAY_URL}?type=${mode}&id=${finalId}&user_id=${userEmail}`, {
               headers: { 'Authorization': token }
             });
             const autoLoadData = await autoLoadRes.json();
@@ -226,31 +227,40 @@ function App() {
   const currentList = activeTab === 'Dashboards' ? availableDashboards : availableTopics;
   const currentSelectionName = currentList.find(item => item.id === currentLoadedId)?.name || "Select Topic";
 
-  // if (!isLoggedIn) return <Login onLogin={handleLogin} apiUrl={API_MONGODB_URL} />;
-  if (!isLoggedIn) return <Authenticator />;
+  // --- RENDER: LOGIN REDIRECT ---
+  if (!isLoggedIn) {
+    return (
+      <div className="fixed inset-0 flex items-center justify-center bg-[#020617]">
+        <div className="text-center relative">
+          <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-64 h-64 bg-indigo-600/20 rounded-full blur-[80px] pointer-events-none"></div>
+          <h1 className="text-3xl font-bold text-white mb-2 tracking-tight">Azuracloud Analytics</h1>
+          <p className="text-slate-400 mb-8 text-sm">Enterprise Data Intelligence Platform</p>
+          <button 
+            onClick={() => signInWithRedirect()} 
+            className="px-10 py-4 bg-indigo-600 hover:bg-indigo-500 text-white rounded-2xl font-bold transition-all shadow-2xl shadow-indigo-500/20 hover:scale-105 active:scale-95"
+          >
+            Sign In to Azuracloud
+          </button>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="fixed inset-0 flex bg-[#020617] text-slate-100 overflow-hidden font-sans">
       <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[1000px] h-[600px] bg-indigo-600/5 rounded-full blur-[120px] pointer-events-none"></div>
 
       <Sidebar 
-        username={username} 
+        username={displayUsername || 'User'} 
         activeTab={activeTab}
         setActiveTab={setActiveTab}
-        signOut={() => signOut()
-          // {
-          // localStorage.removeItem('custom_jwt');
-          // localStorage.removeItem('user_email');
-          // setIsLoggedIn(false);
-          // }
-        } 
+        signOut={() => signOut()} 
       />
 
       <div className="flex-1 flex flex-col min-w-0 h-full overflow-hidden">
         <main className="flex-1 flex flex-col min-h-0">
           <div className="max-w-full mx-auto w-full h-full px-8 pt-2 pb-6 flex flex-col min-h-0">
             
-            {/* Header Area */}
             <div className="flex items-center justify-between mb-4">
               {(activeTab === 'Ask Data' || (activeTab === 'Dashboards' && embedUrl)) ? (
                 <div className="shrink-0 relative" ref={dropdownRef}>
@@ -306,7 +316,6 @@ function App() {
               )}
             </div>
 
-            {/* SUGGESTION BAR - Only visible in Ask Data when a topic is loaded */}
             {activeTab === 'Ask Data' && embedUrl && (
               <div className="shrink-0 z-30 mb-4">
                 <SuggestionBar 
@@ -332,7 +341,6 @@ function App() {
                 <DashboardGallery dashboards={availableDashboards} onSelect={handleSend} />
               ) : embedUrl ? (
                 <div className="flex-1 flex flex-col min-h-0 relative">
-                  {/* Back to Gallery UI for Dashboards */}
                   {activeTab === 'Dashboards' && (
                     <button 
                       onClick={() => { setEmbedUrl(''); setCurrentLoadedId(''); }}
