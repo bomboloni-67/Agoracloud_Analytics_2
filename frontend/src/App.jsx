@@ -36,6 +36,7 @@ function App() {
   const isLoggedIn = authStatus === 'authenticated';
   
   // Use userEmail state as the primary display name and identity for requests
+  const [isLoggingOut, setIsLoggingOut] = useState(false);
   const [userEmail, setUserEmail] = useState('');
   const [embedUrl, setEmbedUrl] = useState('');
   const [currentQuestion, setCurrentQuestion] = useState('');
@@ -145,6 +146,12 @@ function App() {
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
+  useEffect(() => {
+    if (authStatus === 'unauthenticated' && !isLoggingOut) {
+      signInWithRedirect();
+    }
+  }, [authStatus, isLoggingOut]);
+
   // --- EFFECT: TAB SWITCHING ---
   useEffect(() => {
     setEmbedUrl('');
@@ -223,28 +230,22 @@ function App() {
       setIsLoading(false);
     }
   };
+  const handleSignOut = async () => {
+    setIsLoggingOut(true); // Stop the auto-redirect effect
+    await signOut();
+  };
 
   const currentList = activeTab === 'Dashboards' ? availableDashboards : availableTopics;
   const currentSelectionName = currentList.find(item => item.id === currentLoadedId)?.name || "Select Topic";
 
   // --- RENDER: LOGIN REDIRECT ---
   if (!isLoggedIn) {
-    return (
-      <div className="fixed inset-0 flex items-center justify-center bg-[#020617]">
-        <div className="text-center relative">
-          <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-64 h-64 bg-indigo-600/20 rounded-full blur-[80px] pointer-events-none"></div>
-          <h1 className="text-3xl font-bold text-white mb-2 tracking-tight">Azuracloud Analytics</h1>
-          <p className="text-slate-400 mb-8 text-sm">Enterprise Data Intelligence Platform</p>
-          <button 
-            onClick={() => signInWithRedirect()} 
-            className="px-10 py-4 bg-indigo-600 hover:bg-indigo-500 text-white rounded-2xl font-bold transition-all shadow-2xl shadow-indigo-500/20 hover:scale-105 active:scale-95"
-          >
-            Sign In to Azuracloud
-          </button>
-        </div>
-      </div>
-    );
-  }
+  return (
+    <div className="fixed inset-0 flex items-center justify-center bg-[#020617]">
+      <div className="w-8 h-8 border-2 border-indigo-500 border-t-transparent rounded-full animate-spin"></div>
+    </div>
+  );
+}
 
   return (
     <div className="fixed inset-0 flex bg-[#020617] text-slate-100 overflow-hidden font-sans">
@@ -254,7 +255,7 @@ function App() {
         username={displayUsername || 'User'} 
         activeTab={activeTab}
         setActiveTab={setActiveTab}
-        signOut={() => signOut()} 
+        signOut={handleSignOut} 
       />
 
       <div className="flex-1 flex flex-col min-w-0 h-full overflow-hidden">

@@ -26,7 +26,7 @@ Amplify.configure({
           scopes: [
             'email', 
             'openid', 
-            'phone', // Added because it's in your console
+            'phone', 
             'aws.cognito.signin.user.admin'
           ],
           redirectSignIn: [redirectUrl], 
