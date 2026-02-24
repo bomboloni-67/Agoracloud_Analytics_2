@@ -34,8 +34,6 @@ const TOPIC_CONFIGS = {
 function App() {
   const { user, authStatus } = useAuthenticator(context => [context.user]);
   const isLoggedIn = authStatus === 'authenticated';
-  
-  // Use userEmail state as the primary display name and identity for requests
   const [isLoggingOut, setIsLoggingOut] = useState(false);
   const [userEmail, setUserEmail] = useState('');
   const [embedUrl, setEmbedUrl] = useState('');
@@ -47,7 +45,6 @@ function App() {
   const [availableTopics, setAvailableTopics] = useState([]);
   const [availableDashboards, setAvailableDashboards] = useState([]);
   const displayUsername = userEmail.match(/^[^@]+/)?.[0] || 'User';
-  
   const dropdownRef = useRef(null);
   const [suggestionData, setSuggestionData] = useState({ 
     keys: TOPIC_CONFIGS['DEFAULT'].categories,
@@ -115,6 +112,7 @@ function App() {
       initializeUser();
     }
   }, [isLoggedIn]);
+  
 
   const fetchDiscoveryData = async (mode) => {
     try {
@@ -141,6 +139,7 @@ function App() {
       if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
         setIsDropdownOpen(false);
       }
+      
     }
     document.addEventListener("mousedown", handleClickOutside);
     return () => document.removeEventListener("mousedown", handleClickOutside);
@@ -336,9 +335,11 @@ function App() {
                 </div>
               )}
 
-              {activeTab === 'Settings' ? (
-                <Settings apiUrl={API_MONGODB_URL}/>
-              ) : activeTab === 'Dashboards' && !embedUrl ? (
+              {
+              // activeTab === 'Settings' ? (
+              //   <Settings apiUrl={API_MONGODB_URL}/>
+              // ) : 
+              activeTab === 'Dashboards' && !embedUrl ? (
                 <DashboardGallery dashboards={availableDashboards} onSelect={handleSend} />
               ) : embedUrl ? (
                 <div className="flex-1 flex flex-col min-h-0 relative">

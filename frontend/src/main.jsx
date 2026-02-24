@@ -21,8 +21,7 @@ Amplify.configure({
       loginWith: {
         email: true,
         oauth: {
-          domain: 'ap-southeast-1sv8ye23jx.auth.ap-southeast-1.amazoncognito.com',
-          // UPDATED: Must match your AWS Console exactly
+          domain: import.meta.env.VITE_COGNITO_DOMAIN,
           scopes: [
             'email', 
             'openid', 
