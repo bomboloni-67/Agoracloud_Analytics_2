@@ -136,6 +136,10 @@ function App() {
    * This determines which primary UI module to display based on app state.
    */
   const renderContentBody = () => {
+
+    if (isLoggedIn && isLoading) {
+      return null;
+    }
     // 1. Dashboard Gallery View
     if (activeTab === TABS.DASHBOARDS && !embedUrl) {
       return <DashboardGallery dashboards={availableDashboards} handleSend={handleSend} />;
@@ -177,7 +181,7 @@ function App() {
    * and the static page titles/descriptions.
    */
   const renderHeader = () => {
-    const isAssetView = activeTab === TABS.TOPICS || (activeTab === TABS.DASHBOARDS && embedUrl);
+    const isAssetView = (activeTab === TABS.TOPICS || (activeTab === TABS.DASHBOARDS && embedUrl)) && !isLoading;
 
     if (isAssetView) {
       return (
@@ -227,8 +231,12 @@ function App() {
 
     return (
       <div className="flex flex-col">
-        <h2 className="text-xl font-bold text-white tracking-tight">{content.h2}</h2>
-        <p className="text-slate-500 text-xs">{content.p}</p>
+        <h2 className="text-xl font-bold text-white tracking-tight">
+          {content.h2}
+        </h2>
+        <p className="text-slate-500 text-xs">
+          {content.p}
+        </p>
       </div>
     );
   };

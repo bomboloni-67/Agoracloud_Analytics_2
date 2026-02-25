@@ -9,7 +9,7 @@ import { fetchAuthSession } from 'aws-amplify/auth';
 import { TOPIC_CONFIGS, API_GATEWAY_URL, TABS } from '../constants/appConstants';
 
 export const useQS = (userEmail, activeTab) => {
-  const [isLoading, setIsLoading] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
   const [embedUrl, setEmbedUrl] = useState('');
   const [currentQuestion, setCurrentQuestion] = useState('');
   const [currentLoadedId, setCurrentLoadedId] = useState('');
@@ -77,10 +77,17 @@ export const useQS = (userEmail, activeTab) => {
     // This solves the race condition entirely.
     useEffect(() => {
     if (userEmail) {
-        fetchDiscoveryData(TABS.TOPICS);
-        fetchDiscoveryData(TABS.DASHBOARDS);
+        setIsLoading(true);
+        Promise.all(
+            [
+                fetchDiscoveryData(TABS.TOPICS),
+                fetchDiscoveryData(TABS.DASHBOARDS)
+            ]
+        ).finally( 
+            () => setIsLoading(false)
+        )
     }
-    }, [userEmail, fetchDiscoveryData]);
+    }, [userEmail]);
 
   // --- API: EMBEDDING HANDLER ---
   const handleSend = async (question, selectedId) => {
@@ -97,6 +104,10 @@ export const useQS = (userEmail, activeTab) => {
     try {
       const token = await getAuthToken(); 
       const mode = activeTab;
+
+      if (isDiscovery && activeTab === TABS.TOPICS && data.available_topics?.length > 0) {
+        targetId = data.available_topics[0].id;
+      }
       
       const res = await fetch(`${API_GATEWAY_URL}?type=${mode}&id=${targetId}&user_id=${userEmail}`, {
         headers: { 'Authorization': token }
@@ -107,17 +118,6 @@ export const useQS = (userEmail, activeTab) => {
       if (res.ok) {
         let finalId = targetId;
         let finalEmbedUrl = data.embed_url;
-
-        // Handle Auto-loading for Discovery Q
-        if (isDiscovery && activeTab === TABS.TOPICS && data.available_topics?.length > 0) {
-            finalId = data.available_topics[0].id;
-            const autoLoadRes = await fetch(`${API_GATEWAY_URL}?type=${mode}&id=${finalId}&user_id=${userEmail}`, {
-                headers: { 'Authorization': token }
-            });
-            const autoLoadData = await autoLoadRes.json();
-            finalEmbedUrl = autoLoadData.embed_url;
-            data = autoLoadData; 
-        }
 
         // SINGLE PLACE TO SET STATE
         setEmbedUrl(finalEmbedUrl || ''); 
