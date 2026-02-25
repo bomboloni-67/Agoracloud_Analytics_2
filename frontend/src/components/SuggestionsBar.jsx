@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 
-const SuggestionBar = ({ suggestions, onSend, activeTopicId, categoryKeys = [] }) => {
+const SuggestionBar = ({ suggestions, handleSend, activeTopicId, categoryKeys = [] }) => {
   const [expandedCategory, setExpandedCategory] = useState(null);
   const containerRef = useRef(null); 
 
@@ -62,7 +62,7 @@ const SuggestionBar = ({ suggestions, onSend, activeTopicId, categoryKeys = [] }
                   key={idx}
                   onClick={() => {
                     // Triggers the SDK setQuestion logic in App.jsx
-                    onSend(q, activeTopicId);
+                    handleSend(q, activeTopicId);
                     setExpandedCategory(null);
                   }}
                   className="w-full group flex items-center gap-3 px-4 py-3 bg-slate-900/40 border border-slate-800/80 rounded-xl hover:bg-indigo-500/10 hover:border-indigo-500/40 transition-all text-left"

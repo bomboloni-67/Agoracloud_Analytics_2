@@ -9,16 +9,17 @@ import {
   Sparkles,
   BookOpen 
 } from 'lucide-react';
+import { TABS } from '../constants/appConstants';
 
 // Added activeTab and setActiveTab to props
 const Sidebar = ({ signOut, username, activeTab, setActiveTab }) => {
   const [isCollapsed, setIsCollapsed] = useState(false);
 
   const menuItems = [
-    { name: 'Topics', icon: <MessageSquare size={20} /> },
-    { name: 'Stories', icon: <BookOpen size={20} /> },
-    { name: 'Dashboards', icon: <LayoutDashboard size={20} /> },
-    { name: 'Settings', icon: <Settings size={20} /> },
+    { name: TABS.TOPICS, icon: <MessageSquare size={20} /> },
+    { name: TABS.STORIES, icon: <BookOpen size={20} /> },
+    { name: TABS.DASHBOARDS, icon: <LayoutDashboard size={20} /> },
+    { name: TABS.SETTINGS, icon: <Settings size={20} /> },
   ];
   
   return (

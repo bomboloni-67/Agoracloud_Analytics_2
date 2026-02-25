@@ -1,7 +1,7 @@
 import { useState, useMemo } from 'react';
 import { Search, LayoutDashboard, ChevronRight, Filter, Tag } from 'lucide-react';
 
-const DashboardGallery = ({ dashboards, onSelect }) => {
+const DashboardGallery = ({ dashboards, handleSend }) => {
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('All');
 
@@ -93,7 +93,7 @@ const DashboardGallery = ({ dashboards, onSelect }) => {
             {filteredDashboards.map((db) => (
               <button
                 key={db.id}
-                onClick={() => onSelect('', db.id)}
+                onClick={() => handleSend('', db.id)}
                 className="group relative flex flex-col text-left bg-slate-900/30 border border-slate-800/50 rounded-[2rem] p-7 hover:border-indigo-500/40 hover:bg-indigo-500/[0.02] transition-all duration-500 backdrop-blur-sm hover:-translate-y-2 shadow-lg hover:shadow-indigo-500/10 min-h-[240px]"
               >
                 <div className="w-14 h-14 bg-indigo-500/10 rounded-2xl flex items-center justify-center mb-6 group-hover:scale-110 group-hover:bg-indigo-500/20 transition-all duration-500">

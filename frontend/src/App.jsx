@@ -138,7 +138,7 @@ function App() {
   const renderContentBody = () => {
     // 1. Dashboard Gallery View
     if (activeTab === TABS.DASHBOARDS && !embedUrl) {
-      return <DashboardGallery dashboards={availableDashboards} onSelect={handleSend} />;
+      return <DashboardGallery dashboards={availableDashboards} handleSend={handleSend} />;
     }
 
     // 2. Embedded Asset View (Dashboard, Topic, or Story)
@@ -285,7 +285,7 @@ function App() {
                 <SuggestionBar 
                   suggestions={suggestionData.grouped} 
                   categoryKeys={suggestionData.keys}
-                  onSend={handleSend} 
+                  handleSend={handleSend} 
                   activeTopicId={currentLoadedId} 
                 />
               </div>
