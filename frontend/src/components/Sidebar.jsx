@@ -15,12 +15,12 @@ const Sidebar = ({ signOut, username, activeTab, setActiveTab }) => {
   const [isCollapsed, setIsCollapsed] = useState(false);
 
   const menuItems = [
-    { name: 'Ask Data', icon: <MessageSquare size={20} /> },
+    { name: 'Topics', icon: <MessageSquare size={20} /> },
     { name: 'Stories', icon: <BookOpen size={20} /> },
     { name: 'Dashboards', icon: <LayoutDashboard size={20} /> },
     { name: 'Settings', icon: <Settings size={20} /> },
   ];
-
+  
   return (
     <aside 
       className={`bg-white dark:bg-slate-900 border-r border-slate-200 dark:border-slate-800 transition-all duration-300 flex flex-col shadow-xl z-20
@@ -37,7 +37,7 @@ const Sidebar = ({ signOut, username, activeTab, setActiveTab }) => {
             {!isCollapsed && (
               <div className="animate-in fade-in duration-300">
                 <h1 className="text-[12px] font-bold tracking-tight text-slate-800 dark:text-slate-100 uppercase leading-none">
-                  Azuracloud <span className="text-indigo-600 dark:text-indigo-400">Analytics</span>
+                  AiQ <span className="text-indigo-600 dark:text-indigo-400">Analytics</span>
                 </h1>
                 <p className="text-[9px] text-slate-500 font-medium uppercase tracking-widest mt-1">
                   AI Engine

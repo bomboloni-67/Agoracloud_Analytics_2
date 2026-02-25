@@ -11,47 +11,47 @@ const Settings = ( { apiUrl } ) => {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const userEmail = localStorage.getItem('user_email');
   const handleUpdate = async (e) => {
-    e.preventDefault();
-    setStatus({ type: '', msg: '' });
+    // e.preventDefault();
+    // setStatus({ type: '', msg: '' });
 
-    // 1. Basic Validation
-    if (formData.newPassword !== formData.confirmPassword) {
-      return setStatus({ type: 'error', msg: 'New passwords do not match' });
-    }
+    // // 1. Basic Validation
+    // if (formData.newPassword !== formData.confirmPassword) {
+    //   return setStatus({ type: 'error', msg: 'New passwords do not match' });
+    // }
 
-    setIsSubmitting(true);
+    // setIsSubmitting(true);
 
-    const endpoint = '/auth/change-password';
-    const fullUrl = `${apiUrl}${endpoint}`;
+    // const endpoint = '/auth/change-password';
+    // const fullUrl = `${apiUrl}${endpoint}`;
 
-    try {
-      // 2. API Call to your Node.js backend
-      const response = await fetch(fullUrl, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': localStorage.getItem('custom_jwt') 
-        },
-        body: JSON.stringify({
-          email: userEmail,
-          oldPassword: formData.oldPassword,
-          newPassword: formData.newPassword
-        })
-      });
+    // try {
+    //   // 2. API Call to your Node.js backend
+    //   const response = await fetch(fullUrl, {
+    //     method: 'POST',
+    //     headers: {
+    //       'Content-Type': 'application/json',
+    //       'Authorization': localStorage.getItem('custom_jwt') 
+    //     },
+    //     body: JSON.stringify({
+    //       email: userEmail,
+    //       oldPassword: formData.oldPassword,
+    //       newPassword: formData.newPassword
+    //     })
+    //   });
 
-      const data = await response.json();
+    //   const data = await response.json();
 
-      if (response.ok) {
-        setStatus({ type: 'success', msg: 'Password updated successfully!' });
-        setFormData({ oldPassword: '', newPassword: '', confirmPassword: '' });
-      } else {
-        setStatus({ type: 'error', msg: data.msg || 'Failed to update password' });
-      }
-    } catch (error) {
-      setStatus({ type: 'error', msg: 'Server connection error' });
-    } finally {
-      setIsSubmitting(false);
-    }
+    //   if (response.ok) {
+    //     setStatus({ type: 'success', msg: 'Password updated successfully!' });
+    //     setFormData({ oldPassword: '', newPassword: '', confirmPassword: '' });
+    //   } else {
+    //     setStatus({ type: 'error', msg: data.msg || 'Failed to update password' });
+    //   }
+    // } catch (error) {
+    //   setStatus({ type: 'error', msg: 'Server connection error' });
+    // } finally {
+    //   setIsSubmitting(false);
+    // }
   };
 
   return (

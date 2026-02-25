@@ -1,14 +1,30 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 
 const SuggestionBar = ({ suggestions, onSend, activeTopicId, categoryKeys = [] }) => {
   const [expandedCategory, setExpandedCategory] = useState(null);
+  const containerRef = useRef(null); 
 
   const handleCategoryClick = (category) => {
     setExpandedCategory(expandedCategory === category ? null : category);
   };
 
+  useEffect(() => {
+    function handleClickOutside(event) {
+      // If the containerRef exists and the click target is NOT inside the container
+      if (containerRef.current && !containerRef.current.contains(event.target)) {
+        setExpandedCategory(null);
+      }
+    }
+
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+    };
+  }, []); // Empty dependency array is fine here
+
+
   return (
-    <div className="flex flex-col items-center w-full max-w-4xl mx-auto gap-4 -mb-4 -mt-6">
+    <div  ref={containerRef} className="flex flex-col items-center w-full max-w-4xl mx-auto gap-4 -mb-4 -mt-6">
       
       {/* 1. DYNAMIC CATEGORY SELECTOR */}
       <div className="flex flex-wrap justify-center gap-2 px-4">
