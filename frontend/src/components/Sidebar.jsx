@@ -15,7 +15,7 @@ const Sidebar = ({ signOut, username, activeTab, setActiveTab }) => {
   const [isCollapsed, setIsCollapsed] = useState(false);
 
   const menuItems = [
-    { name: 'Ask Data', icon: <MessageSquare size={20} /> },
+    { name: 'Topics', icon: <MessageSquare size={20} /> },
     { name: 'Stories', icon: <BookOpen size={20} /> },
     { name: 'Dashboards', icon: <LayoutDashboard size={20} /> },
     { name: 'Settings', icon: <Settings size={20} /> },

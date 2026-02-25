@@ -1,96 +1,40 @@
-import { useState, useRef, useEffect } from 'react';
-import Sidebar from './components/Sidebar';
-import Login from './components/Login';
-import AgoracloudEmbed from './components/AgoracloudEmbed';
-import SuggestionBar from './components/SuggestionsBar';
-import Settings from './components/Settings';
-import DashboardGallery from './components/DashboardGallery';
-import { Authenticator, useAuthenticator } from '@aws-amplify/ui-react';
+import { useState, useEffect, useRef, useMemo } from 'react';
+import { useAuthenticator } from '@aws-amplify/ui-react';
 import { fetchAuthSession, signOut, signInWithRedirect } from 'aws-amplify/auth';
 
-const TOPIC_CONFIGS = {
-  'YDTZk9p3ROgBAIk1oeF2uMoBarE6eZvo': {
-    categories: ['Sales', 'Inventory', 'Supplier', 'Department', 'Other'],
-    rules: [
-      { key: 'Sales', keywords: ['sale', 'revenue', 'sold', 'profit', 'profitable', 'gp','sales'] },
-      { key: 'Inventory', keywords: ['stock', 'inventory', 'sku', 'on hand', 'availability','holding','hold'] },
-      { key: 'Supplier', keywords: ['supplier', 'vendor'] },
-      { key: 'Department', keywords: ['dept', 'department', 'category', 'division'] },
-    ],
-    defaultCategory: 'Other'
-  },
-  'DEFAULT': {
-    categories: ['What', 'Why', 'Who', 'When', 'Other'],
-    rules: [
-      { key: 'What', keywords: ['what'] },
-      { key: 'Why', keywords: ['why'] },
-      { key: 'Who', keywords: ['who'] },
-      { key: 'When', keywords: ['when', 'time', 'date', 'month', 'year'] },
-    ],
-    defaultCategory: 'Other'
-  }
-};
+//Components imports
+import Sidebar from './components/Sidebar';
+import AgoracloudEmbed from './components/AgoracloudEmbed';
+import SuggestionBar from './components/SuggestionsBar';
+import DashboardGallery from './components/DashboardGallery';
+import { PAGE_METADATA, TABS } from './constants/appConstants';
+import { useQS } from './hooks/useQS';
 
 function App() {
-  const { user, authStatus } = useAuthenticator(context => [context.user]);
+  // --- AUTHENTICATION STATE ---
+  const { authStatus } = useAuthenticator(context => [context.user]);
   const isLoggedIn = authStatus === 'authenticated';
   const [isLoggingOut, setIsLoggingOut] = useState(false);
-  const [userEmail, setUserEmail] = useState('');
-  const [embedUrl, setEmbedUrl] = useState('');
-  const [currentQuestion, setCurrentQuestion] = useState('');
-  const [currentLoadedId, setCurrentLoadedId] = useState('');
-  const [isLoading, setIsLoading] = useState(false);
+  const [activeTab, setActiveTab] = useState(TABS.TOPICS);
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
-  const [activeTab, setActiveTab] = useState('Ask Data'); 
-  const [availableTopics, setAvailableTopics] = useState([]);
-  const [availableDashboards, setAvailableDashboards] = useState([]);
-  const displayUsername = userEmail.match(/^[^@]+/)?.[0] || 'User';
-  const dropdownRef = useRef(null);
-  const [suggestionData, setSuggestionData] = useState({ 
-    keys: TOPIC_CONFIGS['DEFAULT'].categories,
-    grouped: { What: [], Why: [], Who: [], When: [], Other: [] } 
-  });
+  const dropdownRef = useRef(null); 
+  const [userEmail, setUserEmail] = useState('');
+  
+  const {
+    isLoading, embedUrl, setEmbedUrl,
+    currentQuestion, setCurrentQuestion,
+    currentLoadedId, setCurrentLoadedId,
+    availableTopics, availableDashboards,
+    suggestionData, handleSend
+  } = useQS(userEmail, activeTab);
 
-  const API_GATEWAY_URL = import.meta.env.VITE_API_GATEWAY_URL;
-  const API_MONGODB_URL = import.meta.env.VITE_API_MONGODB;
+  // Derived Values
+  const displayUsername = useMemo(() => userEmail.match(/^[^@]+/)?.[0] || 'User', [userEmail]);
 
-  // --- HELPER: CATEGORIZATION ---
-  const categorizeQuestions = (rawQuestions, topicId) => {
-    const config = TOPIC_CONFIGS[topicId] || TOPIC_CONFIGS['DEFAULT'];
-    const grouped = {};
-    config.categories.forEach(cat => { grouped[cat] = []; });
-
-    rawQuestions.forEach((q) => {
-      const lowerQ = typeof q === 'string' ? q.toLowerCase() : "";
-      const matchedRule = config.rules.filter(rule => 
-        rule.keywords.some(keyword => lowerQ.includes(keyword))
-      );
-      if (matchedRule.length > 0){
-          matchedRule.forEach(rule => {
-          if (grouped[rule.key]){
-            grouped[rule.key].push(q);
-          }
-        });
-      }
-      else{
-        if (grouped[config.defaultCategory]) grouped[config.defaultCategory].push(q);
-      }
-    });
-    return { keys: Object.keys(grouped), grouped };
-  };
-
-  // --- HELPER: GET COGNITO TOKEN ---
-  const getAuthToken = async () => {
-    try {
-      const session = await fetchAuthSession();
-      return session.tokens.idToken.toString();
-    } catch (err) {
-      console.error("No session found", err);
-      return null;
-    }
-  };
-
-  // --- EFFECT: IDENTITY & DISCOVERY ---
+  /**
+   * EFFECT: Identity Initialization
+   * Resolves the user's email from the Cognito token and triggers initial data discovery.
+   */
   useEffect(() => {
     if (isLoggedIn) {
       const initializeUser = async () => {
@@ -100,9 +44,6 @@ function App() {
           
           if (email) {
             setUserEmail(email);
-            // Trigger discovery ONLY after email is confirmed
-            fetchDiscoveryData('Q');
-            fetchDiscoveryData('DASHBOARD');
           }
         } catch (err) {
           console.error("Failed to initialize user identity", err);
@@ -113,143 +54,207 @@ function App() {
     }
   }, [isLoggedIn]);
   
-
-  const fetchDiscoveryData = async (mode) => {
-    try {
-      const token = await getAuthToken();
-      if(!token) return;
-
-      // Pass userEmail as a fallback query param to assist the Lambda's internal logic
-      const res = await fetch(`${API_GATEWAY_URL}?type=${mode}&id=default&user_id=${userEmail}`, {
-        headers: { 'Authorization': token }
-      });
-      const data = await res.json();
-      if (res.ok) {
-        if (mode === 'DASHBOARD' && data.available_dashboards) setAvailableDashboards(data.available_dashboards);
-        if (mode === 'Q' && data.available_topics) setAvailableTopics(data.available_topics);
-      }
-    } catch (error) {
-      console.error(`🚨 Discovery Error (${mode}):`, error);
-    }
-  };
-
-  // --- EFFECT: CLICK OUTSIDE DROPDOWN ---
-  useEffect(() => {
-    function handleClickOutside(event) {
-      if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
-        setIsDropdownOpen(false);
-      }
-      
-    }
-    document.addEventListener("mousedown", handleClickOutside);
-    return () => document.removeEventListener("mousedown", handleClickOutside);
-  }, []);
-
+  /**
+   * EFFECT: Managed UI Redirect
+   * Automatically redirects unauthenticated users to the Hosted UI login page.
+   */
   useEffect(() => {
     if (authStatus === 'unauthenticated' && !isLoggingOut) {
       signInWithRedirect();
     }
   }, [authStatus, isLoggingOut]);
 
-  // --- EFFECT: TAB SWITCHING ---
+  /**
+   * EFFECT: Click Outside Handler
+   * Closes the dropdown menus when a user clicks anywhere outside the ref area.
+   */
+  useEffect(() => {
+    function handleClickOutside(event) {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
+        setIsDropdownOpen(false);
+      }
+
+    }
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
+
+
+  /**
+   * EFFECT: State Cleanup
+   * Resets local view state immediately when the tab changes to prevent 
+   * "ghosting" (seeing old data while new data loads).
+   */
   useEffect(() => {
     setEmbedUrl('');
     setCurrentLoadedId('');
     setCurrentQuestion('');
-    
-    // Ensure we only try to load if identity is ready
-    if (isLoggedIn && userEmail) {
-      if (activeTab === 'Dashboards') return;
-      
-      if (activeTab === 'Stories') {
+  }, [activeTab, setEmbedUrl, setCurrentLoadedId, setCurrentQuestion]);
+
+  /**
+   * EFFECT: Auto-Loader
+   * Handles the initial data fetch for specific tabs.
+   */
+  useEffect(() => {
+    // Guard: Only auto-load if we have user identity and aren't already loading
+    if (!isLoggedIn || !userEmail) return;
+
+    // Don't auto-load "TOPICS" until we have topics
+    if (activeTab === TABS.TOPICS && availableTopics.length === 0) return;
+
+    const performAutoLoad = async () => {
+      if (activeTab === TABS.STORIES) {
         handleSend('', 'gallery');
-      } else if (activeTab === 'Ask Data') {
-        if (availableTopics.length > 0) {
-          handleSend('', availableTopics[0].id);
-        } else {
-          handleSend('', 'default');
-        }
+      } else if (activeTab === TABS.TOPICS) {
+        // Use availableTopics from the hook to decide what to load
+        const targetId = availableTopics.length > 0 ? availableTopics[0].id : 'default';
+        handleSend('', targetId);
       }
-    }
-  }, [activeTab, isLoggedIn, userEmail]);
+    };
 
-  // --- HANDLERS ---
-  const handleSend = async (question, selectedId) => {
-    const isDiscovery = selectedId === 'default' || (!selectedId && !currentLoadedId);
-    const targetId = selectedId || currentLoadedId || 'default';
+    performAutoLoad();
 
-    if (question && targetId === currentLoadedId && activeTab === 'Ask Data') {
-      setCurrentQuestion(question);
-      return; 
-    }
+    // Note: handleSend is now a stable dependency from useQS
+  }, [activeTab, isLoggedIn, userEmail, availableTopics.length]);
 
-    setIsLoading(true);
-    setIsDropdownOpen(false); 
-    
-    try {
-      const token = await getAuthToken(); 
-      const modeMap = { 'Dashboards': 'DASHBOARD', 'Stories': 'STORIES', 'Ask Data': 'Q' };
-      const mode = modeMap[activeTab];
-      
-      const res = await fetch(`${API_GATEWAY_URL}?type=${mode}&id=${targetId}&user_id=${userEmail}`, {
-        headers: { 'Authorization': token }
-      });
-      
-      let data = await res.json();
-      
-      if (res.ok) {
-        if (data.available_dashboards) setAvailableDashboards(data.available_dashboards);
-        if (data.available_topics) setAvailableTopics(data.available_topics);
-        
-        let finalId = targetId;
-        let finalEmbedUrl = data.embed_url;
-
-        if (isDiscovery && activeTab === 'Ask Data') {
-          const newList = data.available_topics;
-          if (newList && newList.length > 0) {
-            finalId = newList[0].id;
-            const autoLoadRes = await fetch(`${API_GATEWAY_URL}?type=${mode}&id=${finalId}&user_id=${userEmail}`, {
-              headers: { 'Authorization': token }
-            });
-            const autoLoadData = await autoLoadRes.json();
-            finalEmbedUrl = autoLoadData.embed_url;
-            data = autoLoadData;
-          }
-        }
-
-        const processed = categorizeQuestions(data.suggestions || [], finalId);
-        setSuggestionData(processed);
-        setCurrentQuestion(question || ''); 
-        setEmbedUrl(finalEmbedUrl);
-        if (finalId && finalId !== 'default') setCurrentLoadedId(finalId);
-      }
-    } catch (error) {
-      console.error("🚨 API Error:", error);
-    } finally {
-      setIsLoading(false);
-    }
-  };
+  /**
+   * Handler: handleSignOut
+   * Triggers global logout and sets a guard state to prevent auto-login loops.
+   */
   const handleSignOut = async () => {
-    setIsLoggingOut(true); // Stop the auto-redirect effect
+    setIsLoggingOut(true); 
     await signOut();
   };
 
-  const currentList = activeTab === 'Dashboards' ? availableDashboards : availableTopics;
+  const currentList = activeTab === TABS.DASHBOARDS ? availableDashboards : availableTopics;
   const currentSelectionName = currentList.find(item => item.id === currentLoadedId)?.name || "Select Topic";
+
+
+    /**
+   * View Resolver: Content Body
+   * Logic extracted from the return statement to improve scannability.
+   * This determines which primary UI module to display based on app state.
+   */
+  const renderContentBody = () => {
+    // 1. Dashboard Gallery View
+    if (activeTab === TABS.DASHBOARDS && !embedUrl) {
+      return <DashboardGallery dashboards={availableDashboards} onSelect={handleSend} />;
+    }
+
+    // 2. Embedded Asset View (Dashboard, Topic, or Story)
+    if (embedUrl) {
+      return (
+        <div className="flex-1 flex flex-col min-h-0 relative">
+          {/* Contextual Back Button for Dashboards */}
+          {activeTab === TABS.DASHBOARDS && (
+            <button 
+              onClick={() => { setEmbedUrl(''); setCurrentLoadedId(''); }}
+              className="absolute top-2 left-4 z-50 px-4 py-2 bg-slate-900/90 hover:bg-indigo-600 border border-slate-700 rounded-xl text-[10px] font-bold text-white transition-all shadow-2xl backdrop-blur-md"
+            >
+              ← Back to Gallery
+            </button>
+          )}
+          <AgoracloudEmbed 
+            embedUrl={embedUrl} 
+            activeTab={activeTab} 
+            initialQuestion={currentQuestion} 
+          />
+        </div>
+      );
+    }
+    // 3. Fallback / Default Empty State
+    return (
+      <div className="flex-1 flex flex-col items-center justify-center text-center px-4 opacity-50">
+        <h1 className="text-xl font-bold text-white mb-2">Work in Progress</h1>
+        <p className="text-slate-500 text-xs">Please try other features.</p>
+      </div>
+    );
+  };
+
+    /**
+   * View Resolver: Header
+   * Manages the transition between the Asset Selector (Dropdown) 
+   * and the static page titles/descriptions.
+   */
+  const renderHeader = () => {
+    const isAssetView = activeTab === TABS.TOPICS || (activeTab === TABS.DASHBOARDS && embedUrl);
+
+    if (isAssetView) {
+      return (
+        <div className="shrink-0 relative" ref={dropdownRef}>
+          <button 
+            onClick={() => setIsDropdownOpen(!isDropdownOpen)}
+            className="group flex items-center gap-4 px-5 py-3 bg-slate-900/40 border border-slate-800/60 rounded-2xl hover:border-indigo-500/40 transition-all duration-300 backdrop-blur-md shadow-xl"
+          >
+            <div className="flex flex-col items-start text-left">
+              <span className="text-[9px] uppercase tracking-[0.2em] text-slate-500 font-bold mb-0.5">
+                {activeTab === 'Dashboards' ? 'Dashboard' : 'Topic'}
+              </span>
+              <div className="flex items-center gap-2">
+                <span className="text-[13px] font-bold text-slate-100 tracking-tight">{currentSelectionName}</span>
+                <svg className={`w-4 h-4 text-slate-500 transition-transform duration-300 ${isDropdownOpen ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7" />
+                </svg>
+              </div>
+            </div>
+          </button>
+
+          {/* Dropdown Menu Portal */}
+          {isDropdownOpen && (
+            <div className="absolute top-full left-0 w-72 bg-slate-900/95 border border-slate-800 rounded-2xl shadow-[0_20px_50px_rgba(0,0,0,0.5)] backdrop-blur-2xl z-[100] overflow-hidden animate-in fade-in zoom-in-95 duration-200">
+              <div className="py-2 max-h-[400px] overflow-y-auto custom-scrollbar">
+                {currentList.map((item) => (
+                  <button
+                    key={item.id}
+                    onClick={() => handleSend('', item.id)}
+                    className={`w-full flex items-center gap-4 px-5 py-4 transition-all hover:bg-indigo-500/5 text-left border-b border-slate-800/50 last:border-0 ${currentLoadedId === item.id ? "bg-indigo-500/10" : ""}`}
+                  >
+                    <div className="flex flex-col">
+                      <span className={`text-[11px] font-bold ${currentLoadedId === item.id ? "text-indigo-400" : "text-slate-200"}`}>{item.name}</span>
+                      <span className="text-[9px] text-slate-500 truncate">{item.id}</span>
+                    </div>
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
+        </div>
+      );
+    }
+
+    // Fallback: Standard Page Titles
+    const content = PAGE_METADATA[activeTab] || PAGE_METADATA[TABS.STORIES];
+
+    return (
+      <div className="flex flex-col">
+        <h2 className="text-xl font-bold text-white tracking-tight">{content.h2}</h2>
+        <p className="text-slate-500 text-xs">{content.p}</p>
+      </div>
+    );
+  };
 
   // --- RENDER: LOGIN REDIRECT ---
   if (!isLoggedIn) {
-  return (
-    <div className="fixed inset-0 flex items-center justify-center bg-[#020617]">
-      <div className="w-8 h-8 border-2 border-indigo-500 border-t-transparent rounded-full animate-spin"></div>
-    </div>
-  );
-}
+    return (
+      <div className="fixed inset-0 flex items-center justify-center bg-[#020617]">
+        <div className="w-8 h-8 border-2 border-indigo-500 border-t-transparent rounded-full animate-spin"></div>
+      </div>
+    );
+  }
 
   return (
+    /**
+     * LAYER 0: APP CONTAINER
+     * Main viewport wrapper with global background and ambient lighting effect.
+     */
     <div className="fixed inset-0 flex bg-[#020617] text-slate-100 overflow-hidden font-sans">
+      {/* Decorative ambient glow background */}
       <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[1000px] h-[600px] bg-indigo-600/5 rounded-full blur-[120px] pointer-events-none"></div>
 
+      {/**
+       * LAYER 1: NAVIGATION SIDEBAR
+       * Handles global tab switching and user authentication controls.
+       */}
       <Sidebar 
         username={displayUsername || 'User'} 
         activeTab={activeTab}
@@ -257,66 +262,25 @@ function App() {
         signOut={handleSignOut} 
       />
 
+      {/**
+       * LAYER 2: MAIN CONTENT AREA
+       * A flex-column layout that houses the Header, Suggestion Bar, and Content Body.
+       */}
       <div className="flex-1 flex flex-col min-w-0 h-full overflow-hidden">
         <main className="flex-1 flex flex-col min-h-0">
           <div className="max-w-full mx-auto w-full h-full px-8 pt-2 pb-6 flex flex-col min-h-0">
             
+            {/* --- SECTION: DYNAMIC HEADER --- 
+                Renders either a Topic Selector Dropdown or Page Title depending on context.
+            */}
             <div className="flex items-center justify-between mb-4">
-              {(activeTab === 'Ask Data' || (activeTab === 'Dashboards' && embedUrl)) ? (
-                <div className="shrink-0 relative" ref={dropdownRef}>
-                  <button 
-                    onClick={() => setIsDropdownOpen(!isDropdownOpen)}
-                    className="group flex items-center gap-4 px-5 py-3 bg-slate-900/40 border border-slate-800/60 rounded-2xl hover:border-indigo-500/40 transition-all duration-300 backdrop-blur-md shadow-xl"
-                  >
-                    <div className="flex flex-col items-start text-left">
-                      <span className="text-[9px] uppercase tracking-[0.2em] text-slate-500 font-bold mb-0.5">
-                        {activeTab === 'Dashboards' ? 'Dashboard' : 'Topic'}
-                      </span>
-                      <div className="flex items-center gap-2">
-                        <span className="text-[13px] font-bold text-slate-100 tracking-tight">{currentSelectionName}</span>
-                        <svg className={`w-4 h-4 text-slate-500 transition-transform duration-300 ${isDropdownOpen ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7" />
-                        </svg>
-                      </div>
-                    </div>
-                  </button>
-
-                  {isDropdownOpen && (
-                    <div className="absolute top-full left-0 w-72 bg-slate-900/95 border border-slate-800 rounded-2xl shadow-[0_20px_50px_rgba(0,0,0,0.5)] backdrop-blur-2xl z-[100] overflow-hidden animate-in fade-in zoom-in-95 duration-200">
-                      <div className="py-2 max-h-[400px] overflow-y-auto custom-scrollbar">
-                        {currentList.map((item) => (
-                          <button
-                            key={item.id}
-                            onClick={() => handleSend('', item.id)}
-                            className={`w-full flex items-center gap-4 px-5 py-4 transition-all hover:bg-indigo-500/5 text-left border-b border-slate-800/50 last:border-0 ${currentLoadedId === item.id ? "bg-indigo-500/10" : ""}`}
-                          >
-                            <div className="flex flex-col">
-                              <span className={`text-[11px] font-bold ${currentLoadedId === item.id ? "text-indigo-400" : "text-slate-200"}`}>{item.name}</span>
-                              <span className="text-[9px] text-slate-500 truncate">{item.id}</span>
-                            </div>
-                          </button>
-                        ))}
-                      </div>
-                    </div>
-                  )}
-                </div>
-              ) : (
-                <div className="flex flex-col">
-                  <h2 className="text-xl font-bold text-white tracking-tight">
-                    {activeTab === 'Dashboards' ? 'Intelligence Hub' : activeTab === 'Settings' ? 'Account Settings' : 'Data Stories'}
-                  </h2>
-                  <p className="text-slate-500 text-xs">
-                    {activeTab === 'Dashboards' 
-                      ? 'Select a specialized visualization card to begin' 
-                      : activeTab === 'Settings' 
-                        ? 'Manage your profile and security preferences' 
-                        : 'Create exciting stories from your data insights'}
-                  </p>
-                </div>
-              )}
+              {renderHeader()}
             </div>
 
-            {activeTab === 'Ask Data' && embedUrl && (
+            {/* --- SECTION: SUGGESTION DISCOVERY --- 
+                Contextual prompt helper for the 'TOPICS' (Q) experience.
+            */}
+            {activeTab === TABS.TOPICS && embedUrl && (
               <div className="shrink-0 z-30 mb-4">
                 <SuggestionBar 
                   suggestions={suggestionData.grouped} 
@@ -327,38 +291,24 @@ function App() {
               </div>
             )}
 
+            {/* --- SECTION: CONTENT BODY --- 
+                The core engine of the UI. Dynamically switches between:
+                1. Loading State Overlay
+                2. Dashboard Gallery (Discovery)
+                3. QuickSight Embedded Frame (Active Insight)
+                4. Default Empty State
+            */}
             <div className="flex-1 relative flex flex-col min-h-0 overflow-hidden">
+              
+              {/* Global Loading Spinner Overlay */}
               {isLoading && (
                 <div className="absolute inset-0 z-[60] flex flex-col items-center justify-center bg-[#020617]/80 backdrop-blur-sm rounded-2xl">
                   <div className="w-10 h-10 border-2 border-indigo-500/20 border-t-indigo-500 rounded-full animate-spin mb-3"></div>
                   <p className="text-[10px] uppercase tracking-[0.2em] text-indigo-400 font-bold">Loading...</p>
                 </div>
               )}
-
-              {
-              // activeTab === 'Settings' ? (
-              //   <Settings apiUrl={API_MONGODB_URL}/>
-              // ) : 
-              activeTab === 'Dashboards' && !embedUrl ? (
-                <DashboardGallery dashboards={availableDashboards} onSelect={handleSend} />
-              ) : embedUrl ? (
-                <div className="flex-1 flex flex-col min-h-0 relative">
-                  {activeTab === 'Dashboards' && (
-                    <button 
-                      onClick={() => { setEmbedUrl(''); setCurrentLoadedId(''); }}
-                      className="absolute top-2 left-4 z-50 px-4 py-2 bg-slate-900/90 hover:bg-indigo-600 border border-slate-700 rounded-xl text-[10px] font-bold text-white transition-all shadow-2xl backdrop-blur-md"
-                    >
-                      ← Back to Gallery
-                    </button>
-                  )}
-                  <AgoracloudEmbed embedUrl={embedUrl} activeTab={activeTab} initialQuestion={currentQuestion} />
-                </div>
-              ) : (
-                <div className="flex-1 flex flex-col items-center justify-center text-center px-4 opacity-50">
-                  <h1 className="text-xl font-bold text-white mb-2">Ready to explore?</h1>
-                  <p className="text-slate-500 text-xs">Select a data engine to start.</p>
-                </div>
-              )}
+              {/* Render the main content based on current state */}
+              {renderContentBody()}
             </div>
           </div>
         </main>
