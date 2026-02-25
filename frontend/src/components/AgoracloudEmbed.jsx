@@ -1,5 +1,6 @@
 import React, { useEffect, useRef, memo } from 'react';
 import { createEmbeddingContext } from 'amazon-quicksight-embedding-sdk';
+import {TABS} from '../constants/appConstants';
 
 const AgoracloudEmbed = memo(({ embedUrl, activeTab, initialQuestion }) => {
   const containerRef = useRef(null);
@@ -25,12 +26,11 @@ const AgoracloudEmbed = memo(({ embedUrl, activeTab, initialQuestion }) => {
           height: "100%",
         };
 
-        if (activeTab === 'Dashboards') {
+        if (activeTab === TABS.DASHBOARDS) {
           embeddedExperienceRef.current = await contextRef.current.embedDashboard(frameOptions, {
-            toolbarOptions: { export: true, undoRedo: false, reset: false, executiveSummary: true },
-            sheetOptions: { initialSheetId: undefined, singleSheet: false, emitSizeChangedEvent: true },
+            toolbarOptions: { export: true, undoRedo: false, reset: false, executiveSummary: true }
           });
-        } else if (activeTab === 'Stories') {
+        } else if (activeTab === TABS.STORIES) {
           embeddedExperienceRef.current = await contextRef.current.embedConsole(frameOptions, {
             toolbarOptions: {
               executiveSummary: true,
@@ -59,7 +59,7 @@ const AgoracloudEmbed = memo(({ embedUrl, activeTab, initialQuestion }) => {
 
   // Fast-switch handler for suggestions
   useEffect(() => {
-    if (activeTab === 'Ask Data' && embeddedExperienceRef.current && initialQuestion) {
+    if (activeTab === TABS.TOPICS && embeddedExperienceRef.current && initialQuestion) {
       embeddedExperienceRef.current.setQuestion(initialQuestion);
     }
   }, [initialQuestion, activeTab]);

@@ -20,7 +20,7 @@ const SuggestionBar = ({ suggestions, handleSend, activeTopicId, categoryKeys = 
     return () => {
       document.removeEventListener("mousedown", handleClickOutside);
     };
-  }, []); // Empty dependency array is fine here
+  }, []); 
 
 
   return (

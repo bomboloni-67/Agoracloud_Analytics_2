@@ -14,7 +14,7 @@ export const useQS = (userEmail, activeTab) => {
   const [currentQuestion, setCurrentQuestion] = useState('');
   const [currentLoadedId, setCurrentLoadedId] = useState('');
   const [availableTopics, setAvailableTopics] = useState([]);
-  const [availableDashboards, setAvailableDashboards] = useState([]);
+  const [availableDashboards, setAvailableDashboards] = useState([]); 
   const [suggestionData, setSuggestionData] = useState({ 
     keys: TOPIC_CONFIGS['DEFAULT'].categories,
     grouped: { What: [], Why: [], Who: [], When: [], Other: [] } 
@@ -66,8 +66,8 @@ export const useQS = (userEmail, activeTab) => {
       const data = await res.json();
       
       if (res.ok) {
-        if (mode === 'DASHBOARDS' && data.available_dashboards) setAvailableDashboards(data.available_dashboards);
-        if (mode === 'Q' && data.available_topics) setAvailableTopics(data.available_topics);
+        if (mode === TABS.DASHBOARDS && data.available_dashboards) setAvailableDashboards(data.available_dashboards);
+        if (mode === TABS.TOPICS && data.available_topics) setAvailableTopics(data.available_topics);
       }
     } catch (error) {
       console.error(`Discovery Error (${mode}):`, error);
@@ -77,8 +77,8 @@ export const useQS = (userEmail, activeTab) => {
     // This solves the race condition entirely.
     useEffect(() => {
     if (userEmail) {
-        fetchDiscoveryData('Q');
-        fetchDiscoveryData('DASHBOARD');
+        fetchDiscoveryData(TABS.TOPICS);
+        fetchDiscoveryData(TABS.DASHBOARDS);
     }
     }, [userEmail, fetchDiscoveryData]);
 
@@ -96,8 +96,7 @@ export const useQS = (userEmail, activeTab) => {
     
     try {
       const token = await getAuthToken(); 
-      const modeMap = { [TABS.DASHBOARDS]: 'DASHBOARD', [TABS.STORIES]: 'STORIES', [TABS.TOPICS]: 'Q' };
-      const mode = modeMap[activeTab];
+      const mode = activeTab;
       
       const res = await fetch(`${API_GATEWAY_URL}?type=${mode}&id=${targetId}&user_id=${userEmail}`, {
         headers: { 'Authorization': token }
@@ -109,30 +108,23 @@ export const useQS = (userEmail, activeTab) => {
         let finalId = targetId;
         let finalEmbedUrl = data.embed_url;
 
-        if (data.embed_url) {
-            setEmbedUrl(data.embed_url);
-        } else {
-            // If we didn't get a URL (like in discovery mode), clear the previous one
-            setEmbedUrl(''); 
-            console.warn("API returned success but no embed_url. Check Lambda logic.");
-        }
-        if (data.available_dashboards) setAvailableDashboards(data.available_dashboards);
-        if (data.available_topics) setAvailableTopics(data.available_topics);
-
-        // Logic for Auto-loading first topic in Q search
+        // Handle Auto-loading for Discovery Q
         if (isDiscovery && activeTab === TABS.TOPICS && data.available_topics?.length > 0) {
-          finalId = data.available_topics[0].id;
-          const autoLoadRes = await fetch(`${API_GATEWAY_URL}?type=${mode}&id=${finalId}&user_id=${userEmail}`, {
-            headers: { 'Authorization': token }
-          });
-          const autoLoadData = await autoLoadRes.json();
-          finalEmbedUrl = autoLoadData.embed_url;
-          data = autoLoadData;
+            finalId = data.available_topics[0].id;
+            const autoLoadRes = await fetch(`${API_GATEWAY_URL}?type=${mode}&id=${finalId}&user_id=${userEmail}`, {
+                headers: { 'Authorization': token }
+            });
+            const autoLoadData = await autoLoadRes.json();
+            finalEmbedUrl = autoLoadData.embed_url;
+            data = autoLoadData; 
         }
 
+        // SINGLE PLACE TO SET STATE
+        setEmbedUrl(finalEmbedUrl || ''); 
+        setAvailableDashboards(data.available_dashboards || []);
+        setAvailableTopics(data.available_topics || []);
         setSuggestionData(categorizeQuestions(data.suggestions || [], finalId));
-        setCurrentQuestion(question || ''); 
-        setEmbedUrl(finalEmbedUrl);
+        setCurrentQuestion(question || '');
         if (finalId && finalId !== 'default') setCurrentLoadedId(finalId);
       }
     } catch (error) {
