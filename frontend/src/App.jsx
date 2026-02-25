@@ -92,6 +92,16 @@ function App() {
   }, [activeTab, setEmbedUrl, setCurrentLoadedId, setCurrentQuestion]);
 
   /**
+   * EFFECT: Closes dropdown when loading new content
+   * Ensures the dropdown doesn't remain open when the user initiates a new selection.
+   */
+  useEffect(() => {
+    if (isLoading) {
+      setIsDropdownOpen(false);
+    }
+  }, [isLoading]);
+
+  /**
    * EFFECT: Auto-Loader
    * Handles the initial data fetch for specific tabs.
    */
@@ -288,7 +298,7 @@ function App() {
             {/* --- SECTION: SUGGESTION DISCOVERY --- 
                 Contextual prompt helper for the 'TOPICS' (Q) experience.
             */}
-            {activeTab === TABS.TOPICS && embedUrl && (
+            {activeTab === TABS.TOPICS && embedUrl && !isLoading && (
               <div className="shrink-0 z-30 mb-4">
                 <SuggestionBar 
                   suggestions={suggestionData.grouped} 
