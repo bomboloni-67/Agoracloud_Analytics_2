@@ -4,7 +4,7 @@ import { fetchAuthSession, signOut, signInWithRedirect } from 'aws-amplify/auth'
 
 //Components imports
 import Sidebar from './components/Sidebar';
-import AgoracloudEmbed from './components/AgoracloudEmbed';
+import Embedding from './components/Embedding';
 import SuggestionBar from './components/SuggestionsBar';
 import DashboardGallery from './components/DashboardGallery';
 import { PAGE_METADATA, TABS } from './constants/appConstants';
@@ -79,6 +79,16 @@ function App() {
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
+  /**
+   * EFFECT: Closes dropdown when loading new content
+   * Ensures the dropdown doesn't remain open when the user initiates a new selection.
+   */
+  useEffect(() => {
+    if (isLoading) {
+      setIsDropdownOpen(false);
+    }
+  }, [isLoading]);
+
 
   /**
    * EFFECT: State Cleanup
@@ -90,16 +100,6 @@ function App() {
     setCurrentLoadedId('');
     setCurrentQuestion('');
   }, [activeTab, setEmbedUrl, setCurrentLoadedId, setCurrentQuestion]);
-
-  /**
-   * EFFECT: Closes dropdown when loading new content
-   * Ensures the dropdown doesn't remain open when the user initiates a new selection.
-   */
-  useEffect(() => {
-    if (isLoading) {
-      setIsDropdownOpen(false);
-    }
-  }, [isLoading]);
 
   /**
    * EFFECT: Auto-Loader
@@ -137,7 +137,9 @@ function App() {
   };
 
   const currentList = activeTab === TABS.DASHBOARDS ? availableDashboards : availableTopics;
-  const currentSelectionName = currentList.find(item => item.id === currentLoadedId)?.name || "Select Topic";
+  const text = "Select Dashboard";
+  if( activeTab === TABS.TOPICS ){  text = "Select Topic"; }
+  const currentSelectionName = currentList.find(item => item.id === currentLoadedId)?.name || text;
 
 
     /**
@@ -168,7 +170,7 @@ function App() {
               ← Back to Gallery
             </button>
           )}
-          <AgoracloudEmbed 
+          <Embedding 
             embedUrl={embedUrl} 
             activeTab={activeTab} 
             initialQuestion={currentQuestion} 

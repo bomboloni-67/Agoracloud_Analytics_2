@@ -2,7 +2,7 @@ import React, { useEffect, useRef, memo } from 'react';
 import { createEmbeddingContext } from 'amazon-quicksight-embedding-sdk';
 import {TABS} from '../constants/appConstants';
 
-const AgoracloudEmbed = memo(({ embedUrl, activeTab, initialQuestion }) => {
+const Embedding = memo(({ embedUrl, activeTab, initialQuestion }) => {
   const containerRef = useRef(null);
   const contextRef = useRef(null);
   const embeddedExperienceRef = useRef(null);
@@ -80,4 +80,4 @@ const AgoracloudEmbed = memo(({ embedUrl, activeTab, initialQuestion }) => {
   );
 });
 
-export default AgoracloudEmbed;
+export default Embedding;
