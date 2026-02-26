@@ -80,8 +80,7 @@ export const useQS = (userEmail, activeTab) => {
         setIsLoading(true);
         Promise.all(
             [
-                fetchDiscoveryData(TABS.TOPICS),
-                fetchDiscoveryData(TABS.DASHBOARDS)
+                fetchDiscoveryData(TABS.TOPICS)            
             ]
         ).finally( 
             () => setIsLoading(false)
@@ -116,16 +115,15 @@ export const useQS = (userEmail, activeTab) => {
       let data = await res.json();
       
       if (res.ok) {
-        let finalId = targetId;
         let finalEmbedUrl = data.embed_url;
 
         // SINGLE PLACE TO SET STATE
         setEmbedUrl(finalEmbedUrl || ''); 
         setAvailableDashboards(data.available_dashboards || []);
         setAvailableTopics(data.available_topics || []);
-        setSuggestionData(categorizeQuestions(data.suggestions || [], finalId));
+        setSuggestionData(categorizeQuestions(data.suggestions || [], targetId));
         setCurrentQuestion(question || '');
-        if (finalId && finalId !== 'default') setCurrentLoadedId(finalId);
+        if (targetId && targetId !== 'default') setCurrentLoadedId(targetId);
       }
     } catch (error) {
       console.error("Embedding API Error:", error);
