@@ -21,7 +21,7 @@ function App() {
   const [userEmail, setUserEmail] = useState('');
   
   const {
-    isLoading, embedUrl, setEmbedUrl,
+    isLoading, embedUrl, setEmbedUrl, embedType,
     currentQuestion, setCurrentQuestion,
     currentLoadedId, setCurrentLoadedId,
     availableTopics, availableDashboards,
@@ -117,14 +117,13 @@ function App() {
         handleSend('', 'gallery');
       } else if (activeTab === TABS.TOPICS) {
         // Use availableTopics from the hook to decide what to load
-        const targetId = availableTopics.length > 0 ? availableTopics[0].id : 'default';
+        const targetId = availableTopics[0].id;
         handleSend('', targetId);
       }
     };
 
     performAutoLoad();
 
-    // Note: handleSend is now a stable dependency from useQS
   }, [activeTab, isLoggedIn, userEmail, availableTopics.length]);
 
   /**
@@ -137,9 +136,7 @@ function App() {
   };
 
   const currentList = activeTab === TABS.DASHBOARDS ? availableDashboards : availableTopics;
-  var text = "Select Dashboard";
-  if( activeTab === TABS.TOPICS ){  text = "Select Topic"; }
-  const currentSelectionName = currentList.find(item => item.id === currentLoadedId)?.name || text;
+  const currentSelectionName = currentList.find(item => item.id === currentLoadedId)?.name || ' ';
 
 
     /**
@@ -153,8 +150,10 @@ function App() {
       return null;
     }
     // 1. Dashboard Gallery View
-    if (activeTab === TABS.DASHBOARDS && !embedUrl) {
-      return <DashboardGallery dashboards={availableDashboards} handleSend={handleSend} />;
+    if (activeTab === TABS.DASHBOARDS) {
+      if (!embedUrl || embedType !== TABS.DASHBOARDS){
+        return <DashboardGallery dashboards={availableDashboards} handleSend={handleSend} />;
+      }
     }
 
     // 2. Embedded Asset View (Dashboard, Topic, or Story)
@@ -187,13 +186,16 @@ function App() {
     );
   };
 
-    /**
+  /**
    * View Resolver: Header
    * Manages the transition between the Asset Selector (Dropdown) 
    * and the static page titles/descriptions.
    */
   const renderHeader = () => {
-    const isAssetView = (activeTab === TABS.TOPICS || (activeTab === TABS.DASHBOARDS && embedUrl)) && !isLoading;
+    const isAssetView = (
+      (activeTab === TABS.TOPICS && availableTopics.length > 0) || 
+      (activeTab === TABS.DASHBOARDS && embedUrl && availableDashboards.length > 0 && embedType === TABS.DASHBOARDS)
+    ) && !isLoading;
 
     if (isAssetView) {
       return (

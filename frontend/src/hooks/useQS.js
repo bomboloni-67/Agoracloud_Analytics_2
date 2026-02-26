@@ -11,6 +11,7 @@ import { TOPIC_CONFIGS, API_GATEWAY_URL, TABS } from '../constants/appConstants'
 export const useQS = (userEmail, activeTab) => {
   const [isLoading, setIsLoading] = useState(true);
   const [embedUrl, setEmbedUrl] = useState('');
+  const [embedType, setEmbedType] = useState('');
   const [currentQuestion, setCurrentQuestion] = useState('');
   const [currentLoadedId, setCurrentLoadedId] = useState('');
   const [availableTopics, setAvailableTopics] = useState([]);
@@ -90,7 +91,6 @@ export const useQS = (userEmail, activeTab) => {
 
   // --- API: EMBEDDING HANDLER ---
   const handleSend = async (question, selectedId) => {
-    const isDiscovery = selectedId === 'default' || (!selectedId && !currentLoadedId);
     const targetId = selectedId || currentLoadedId || 'default';
 
     if (question && targetId === currentLoadedId && activeTab === TABS.TOPICS) {
@@ -103,10 +103,7 @@ export const useQS = (userEmail, activeTab) => {
     try {
       const token = await getAuthToken(); 
       const mode = activeTab;
-
-      if (isDiscovery && activeTab === TABS.TOPICS && data.available_topics?.length > 0) {
-        targetId = data.available_topics[0].id;
-      }
+      setEmbedType(mode);
       
       const res = await fetch(`${API_GATEWAY_URL}?type=${mode}&id=${targetId}&user_id=${userEmail}`, {
         headers: { 'Authorization': token }
@@ -136,6 +133,7 @@ export const useQS = (userEmail, activeTab) => {
     isLoading,
     embedUrl,
     setEmbedUrl,
+    embedType,
     currentQuestion,
     setCurrentQuestion,
     currentLoadedId,
