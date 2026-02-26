@@ -137,7 +137,7 @@ function App() {
   };
 
   const currentList = activeTab === TABS.DASHBOARDS ? availableDashboards : availableTopics;
-  const text = "Select Dashboard";
+  var text = "Select Dashboard";
   if( activeTab === TABS.TOPICS ){  text = "Select Topic"; }
   const currentSelectionName = currentList.find(item => item.id === currentLoadedId)?.name || text;
 
@@ -239,7 +239,7 @@ function App() {
     }
 
     // Fallback: Standard Page Titles
-    const content = PAGE_METADATA[activeTab] || PAGE_METADATA[TABS.STORIES];
+    const content = PAGE_METADATA[activeTab] || PAGE_METADATA[TABS.TOPICS];
 
     return (
       <div className="flex flex-col">

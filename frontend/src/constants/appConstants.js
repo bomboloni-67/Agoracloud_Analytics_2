@@ -46,7 +46,7 @@ export const PAGE_METADATA = {
     h2: 'Data Stories', 
     p: 'Create exciting stories from your data insights' 
   },
-  'TOPICS': {
+  'Topics': {
     h2: 'Generative Insights',
     p: 'Ask questions about your data in plain English'
   }
