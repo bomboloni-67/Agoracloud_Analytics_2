@@ -69,11 +69,14 @@ const Embedding = memo(({ embedUrl, activeTab, initialQuestion }) => {
       <div 
         ref={containerRef} 
         style={{ 
+          // height:'calc(100% + 35px)', 
           height:'calc(100%)', 
           width: '100%'
         }} 
         className="relative"
       />
+      {/* Bottom fade for smoother visual transition */}
+      {/* <div className="absolute bottom-0 left-0 w-full h-4 bg-gradient-to-t from-[#020617] to-transparent z-10 pointer-events-none" /> */}
     </div>
   );
 });
