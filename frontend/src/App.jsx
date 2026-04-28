@@ -160,15 +160,6 @@ function App() {
     if (embedUrl) {
       return (
         <div className="flex-1 flex flex-col min-h-0 relative">
-          {/* Contextual Back Button for Dashboards */}
-          {activeTab === TABS.DASHBOARDS && (
-            <button 
-              onClick={() => { setEmbedUrl(''); setCurrentLoadedId(''); }}
-              className="absolute top-2 left-4 z-50 px-4 py-2 bg-slate-900/90 hover:bg-indigo-600 border border-slate-700 rounded-xl text-[10px] font-bold text-white transition-all shadow-2xl backdrop-blur-md"
-            >
-              ← Back to Gallery
-            </button>
-          )}
           <Embedding 
             embedUrl={embedUrl} 
             activeTab={activeTab} 
@@ -199,43 +190,65 @@ function App() {
 
     if (isAssetView) {
       return (
-        <div className="shrink-0 relative" ref={dropdownRef}>
-          <button 
-            onClick={() => setIsDropdownOpen(!isDropdownOpen)}
-            className="group flex items-center gap-4 px-5 py-3 bg-slate-900/40 border border-slate-800/60 rounded-2xl hover:border-indigo-500/40 transition-all duration-300 backdrop-blur-md shadow-xl"
-          >
-            <div className="flex flex-col items-start text-left">
-              <span className="text-[9px] uppercase tracking-[0.2em] text-slate-500 font-bold mb-0.5">
-                {activeTab === 'Dashboards' ? 'Dashboard' : 'Topic'}
-              </span>
-              <div className="flex items-center gap-2">
-                <span className="text-[13px] font-bold text-slate-100 tracking-tight">{currentSelectionName}</span>
-                <svg className={`w-4 h-4 text-slate-500 transition-transform duration-300 ${isDropdownOpen ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7" />
-                </svg>
-              </div>
-            </div>
-          </button>
-
-          {/* Dropdown Menu Portal */}
-          {isDropdownOpen && (
-            <div className="absolute top-full left-0 w-72 bg-slate-900/95 border border-slate-800 rounded-2xl shadow-[0_20px_50px_rgba(0,0,0,0.5)] backdrop-blur-2xl z-[100] overflow-hidden animate-in fade-in zoom-in-95 duration-200">
-              <div className="py-2 max-h-[400px] overflow-y-auto custom-scrollbar">
-                {currentList.map((item) => (
-                  <button
-                    key={item.id}
-                    onClick={() => handleSend('', item.id)}
-                    className={`w-full flex items-center gap-4 px-5 py-4 transition-all hover:bg-indigo-500/5 text-left border-b border-slate-800/50 last:border-0 ${currentLoadedId === item.id ? "bg-indigo-500/10" : ""}`}
-                  >
-                    <div className="flex flex-col">
-                      <span className={`text-[11px] font-bold ${currentLoadedId === item.id ? "text-indigo-400" : "text-slate-200"}`}>{item.name}</span>
-                      <span className="text-[9px] text-slate-500 truncate">{item.id}</span>
-                    </div>
-                  </button>
-                ))}
-              </div>
-            </div>
+        /* Added flex and items-center to align button and dropdown */
+        <div className="flex items-center gap-3 shrink-0 relative">
+          
+          {/* NEW: Back Button moved here */}
+          {activeTab === TABS.DASHBOARDS && (
+            <button 
+              onClick={() => { setEmbedUrl(''); setCurrentLoadedId(''); }}
+              className="gap-4 px-6 py-4 bg-slate-900/60 hover:bg-indigo-600/40 border border-slate-800 rounded-2xl text-[10px] font-bold text-white transition-all backdrop-blur-md"
+            >
+               <svg 
+                xmlns="http://www.w3.org/2000/svg" 
+                className="w-6 h-6 text-slate-400 group-hover:text-indigo-400 transition-colors" 
+                fill="none" 
+                viewBox="0 0 24 24" 
+                stroke="currentColor"
+              >
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M15 19l-7-7 7-7" />
+              </svg>
+            </button>
           )}
+
+          <div ref={dropdownRef} className="relative">
+            <button 
+              onClick={() => setIsDropdownOpen(!isDropdownOpen)}
+              className="group flex items-center gap-4 px-5 py-3 bg-slate-900/40 border border-slate-800/60 rounded-2xl hover:border-indigo-500/40 transition-all duration-300 backdrop-blur-md shadow-xl"
+            >
+              <div className="flex flex-col items-start text-left">
+                <span className="text-[9px] uppercase tracking-[0.2em] text-slate-500 font-bold mb-0.5">
+                  {activeTab === 'Dashboards' ? 'Dashboard' : 'Topic'}
+                </span>
+                <div className="flex items-center gap-2">
+                  <span className="text-[13px] font-bold text-slate-100 tracking-tight">{currentSelectionName}</span>
+                  <svg className={`w-4 h-4 text-slate-500 transition-transform duration-300 ${isDropdownOpen ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7" />
+                  </svg>
+                </div>
+              </div>
+            </button>
+
+            {/* Dropdown Menu Portal remains the same */}
+            {isDropdownOpen && (
+              <div className="absolute top-full left-0 w-72 bg-slate-900/95 border border-slate-800 rounded-2xl shadow-[0_20px_50px_rgba(0,0,0,0.5)] backdrop-blur-2xl z-[100] overflow-hidden">
+                <div className="py-2 max-h-[400px] overflow-y-auto custom-scrollbar">
+                  {currentList.map((item) => (
+                    <button
+                      key={item.id}
+                      onClick={() => handleSend('', item.id)}
+                      className={`w-full flex items-center gap-4 px-5 py-4 transition-all hover:bg-indigo-500/5 text-left border-b border-slate-800/50 last:border-0 ${currentLoadedId === item.id ? "bg-indigo-500/10" : ""}`}
+                    >
+                      <div className="flex flex-col">
+                        <span className={`text-[11px] font-bold ${currentLoadedId === item.id ? "text-indigo-400" : "text-slate-200"}`}>{item.name}</span>
+                        <span className="text-[9px] text-slate-500 truncate">{item.id}</span>
+                      </div>
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
+          </div>
         </div>
       );
     }

@@ -28,7 +28,7 @@ const Embedding = memo(({ embedUrl, activeTab, initialQuestion }) => {
 
         if (activeTab === TABS.DASHBOARDS) {
           embeddedExperienceRef.current = await contextRef.current.embedDashboard(frameOptions, {
-            toolbarOptions: { export: true, undoRedo: false, reset: false, executiveSummary: true }
+            toolbarOptions: { export: true, undoRedo: true, reset: true, executiveSummary: true }
           });
         } else if (activeTab === TABS.STORIES) {
           embeddedExperienceRef.current = await contextRef.current.embedConsole(frameOptions, {
