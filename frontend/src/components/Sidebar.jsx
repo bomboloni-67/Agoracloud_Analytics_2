@@ -12,7 +12,7 @@ import {
 import { TABS } from '../constants/appConstants';
 
 // Added activeTab and setActiveTab to props
-const Sidebar = ({ signOut, username, activeTab, setActiveTab }) => {
+const Sidebar = ({ signOut, username, activeTab, setActiveTab, isLoading }) => {
   const [isCollapsed, setIsCollapsed] = useState(false);
 
   const menuItems = [
@@ -21,6 +21,11 @@ const Sidebar = ({ signOut, username, activeTab, setActiveTab }) => {
     { name: TABS.DASHBOARDS, icon: <LayoutDashboard size={20} /> },
     { name: TABS.SETTINGS, icon: <Settings size={20} /> },
   ];
+
+  const handleTabClick = (tabName) => {
+    if (isLoading) return;
+    setActiveTab(tabName);
+  };
   
   return (
     <aside 
@@ -73,7 +78,7 @@ const Sidebar = ({ signOut, username, activeTab, setActiveTab }) => {
           <button
             key={item.name}
             // This now triggers the useEffect in App.jsx
-            onClick={() => setActiveTab(item.name)} 
+            onClick={() => handleTabClick(item.name)} 
             className={`w-full flex items-center p-3 rounded-xl transition-all group
               ${activeTab === item.name 
                 ? 'bg-indigo-50 text-indigo-600 dark:bg-indigo-900/30 dark:text-indigo-400' 

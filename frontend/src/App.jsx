@@ -295,6 +295,7 @@ function App() {
         activeTab={activeTab}
         setActiveTab={setActiveTab}
         signOut={handleSignOut} 
+        isLoading={isLoading} 
       />
 
       {/**
