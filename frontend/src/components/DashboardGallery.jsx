@@ -6,7 +6,7 @@ const DashboardGallery = ({ dashboards, handleSend }) => {
   const [selectedCategory, setSelectedCategory] = useState('All');
 
   const CATEGORY_RULES = {
-    'Executive':  ['a299e', '10022', '2242f', 'd9d0c'],
+    'Executive':  ['a299e', '10022', '2242f'],
     'Sales':     ['a299e', 'b8973', 'bbfed','b5610','2df77','e33ba','220ba','83725','fcc42','fd2d0','e0f6f'],
     'Inventory': ['f39d7', '8669e', '2242f'],
     'Member':    ['96948','510a2', '514d9', 'e236b','f911e','1abef','37351','6cbf9']
