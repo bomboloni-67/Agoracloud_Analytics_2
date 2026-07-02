@@ -106,7 +106,7 @@ const DashboardGallery = ({ dashboards, handleSend }) => {
                   <h3 className="text-lg font-bold text-slate-100 group-hover:text-white transition-colors mb-2 line-clamp-2 leading-snug">
                     {db.name}
                   </h3>
-                  /
+                  
                   {/* Standardized Ref ID Position */}
                   {/* <div className="mt-auto mb-4 flex items-center gap-2">
                     <span className="text-[9px] text-slate-600 uppercase tracking-[0.2em] font-bold">Ref_ID:</span>
