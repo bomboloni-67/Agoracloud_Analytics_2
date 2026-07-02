@@ -6,10 +6,10 @@ const DashboardGallery = ({ dashboards, handleSend }) => {
   const [selectedCategory, setSelectedCategory] = useState('All');
 
   const CATEGORY_RULES = {
-    'Executive':  ['a299e', '10022', '2242f'],
-    'Sales':     ['a299e', 'b8973', 'bbfed','b5610','2df77','e33ba','220ba','83725','fcc42','fd2d0','e0f6f'],
-    'Inventory': ['f39d7', '8669e', '2242f'],
-    'Member':    ['96948','510a2', '514d9', 'e236b','f911e','1abef','37351','6cbf9']
+    'Executive':  ['9a5232', '10022', '2242f', '37bab6'],
+    'Sales':     ['bbfed','2df77','e33ba','220ba','83725','fd2d0','e0f6f'],
+    'Inventory': ['f39d7', '8669e'],
+    'Member':    ['6aecf09','43769a','514d9','1abef','37351','6cbf9']
   };
   const categories = ['All', 'Executive', 'Sales', 'Inventory', 'Member'];
   
@@ -108,12 +108,12 @@ const DashboardGallery = ({ dashboards, handleSend }) => {
                   </h3>
                   
                   {/* Standardized Ref ID Position */}
-                  {/* <div className="mt-auto mb-4 flex items-center gap-2">
+                  <div className="mt-auto mb-4 flex items-center gap-2">
                     <span className="text-[9px] text-slate-600 uppercase tracking-[0.2em] font-bold">Ref_ID:</span>
-                    <span className="text-[10px] text-slate-500 font-mono truncate max-w-[120px] bg-slate-800/50 px-2 py-0.5 rounded">
+                    <span className="text-[10px] text-slate-500 font-mono max-w-[120px] bg-slate-800/50 px-2 py-0.5 rounded">
                       {db.id}
                     </span>
-                  </div> */}
+                  </div>
                 </div>
 
                 {/* <div className="pt-4 border-t border-slate-800/50 flex items-center justify-between">
