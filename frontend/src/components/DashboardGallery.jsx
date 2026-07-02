@@ -106,14 +106,14 @@ const DashboardGallery = ({ dashboards, handleSend }) => {
                   <h3 className="text-lg font-bold text-slate-100 group-hover:text-white transition-colors mb-2 line-clamp-2 leading-snug">
                     {db.name}
                   </h3>
-                  
+                  /
                   {/* Standardized Ref ID Position */}
-                  <div className="mt-auto mb-4 flex items-center gap-2">
+                  {/* <div className="mt-auto mb-4 flex items-center gap-2">
                     <span className="text-[9px] text-slate-600 uppercase tracking-[0.2em] font-bold">Ref_ID:</span>
                     <span className="text-[10px] text-slate-500 font-mono max-w-[120px] bg-slate-800/50 px-2 py-0.5 rounded">
                       {db.id}
                     </span>
-                  </div>
+                  </div> */}
                 </div>
 
                 {/* <div className="pt-4 border-t border-slate-800/50 flex items-center justify-between">
