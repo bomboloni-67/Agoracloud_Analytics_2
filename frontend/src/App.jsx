@@ -19,6 +19,9 @@ function App() {
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const dropdownRef = useRef(null); 
   const [userEmail, setUserEmail] = useState('');
+
+  const timeoutRef = useRef(null);
+  const IDLE_TIME = 30 * 60 * 1000; // 30 minutes
   
   const {
     isLoading, embedUrl, setEmbedUrl, embedType,
@@ -27,6 +30,38 @@ function App() {
     availableTopics, availableDashboards,
     suggestionData, handleSend
   } = useQS(userEmail, activeTab);
+
+   const resetTimer = () => {
+    clearTimeout(timeoutRef.current);
+
+    timeoutRef.current = setTimeout(async () => {
+      setIsLoggingOut(true); 
+      await signOut();
+    }, IDLE_TIME);
+  };
+
+  useEffect(() => {
+    const events = [
+      'mousedown',
+      'keypress',
+      'scroll',
+      'touchstart'
+    ];
+
+    events.forEach(event =>
+      window.addEventListener(event, resetTimer)
+    );
+
+    resetTimer();
+
+    return () => {
+      clearTimeout(timeoutRef.current);
+
+      events.forEach(event =>
+        window.removeEventListener(event, resetTimer)
+      );
+    };
+  }, []);
 
   // Derived Values
   const displayUsername = useMemo(() => userEmail.match(/^[^@]+/)?.[0] || 'User', [userEmail]);
@@ -161,6 +196,7 @@ function App() {
       return (
         <div className="flex-1 flex flex-col min-h-0 relative">
           <Embedding 
+            key={currentLoadedId}
             embedUrl={embedUrl} 
             activeTab={activeTab} 
             initialQuestion={currentQuestion} 
@@ -241,7 +277,7 @@ function App() {
                     >
                       <div className="flex flex-col">
                         <span className={`text-[11px] font-bold ${currentLoadedId === item.id ? "text-indigo-400" : "text-slate-200"}`}>{item.name}</span>
-                        <span className="text-[9px] text-slate-500 truncate">{item.id}</span>
+                        {/* <span className="text-[9px] text-slate-500 truncate">{item.id}</span> */}
                       </div>
                     </button>
                   ))}

@@ -3,18 +3,22 @@ import { Search, LayoutDashboard, ChevronRight, Filter, Tag } from 'lucide-react
 
 const DashboardGallery = ({ dashboards, handleSend }) => {
   const [searchTerm, setSearchTerm] = useState('');
-  const [selectedCategory, setSelectedCategory] = useState('All');
+  // const [selectedCategory, setSelectedCategory] = useState('All');
+  const [selectedCategory, setSelectedCategory] = useState('Executive');
+
 
   const CATEGORY_RULES = {
     'Executive':  ['9a5232', '10022', '2242f', '37bab6'],
-    'Sales':     ['bbfed','2df77','e33ba','220ba','83725','fd2d0','e0f6f'],
+    'Sales':     ['bbfed','2df77','c288ec1','220ba','83725','ac744452','e0f6f'],
     'Inventory': ['f39d7', '8669e'],
     'Member':    ['6aecf09','43769a','514d9','1abef','37351','6cbf9']
   };
-  const categories = ['All', 'Executive', 'Sales', 'Inventory', 'Member'];
+  // const categories = ['All', 'Executive', 'Sales', 'Inventory', 'Member'];
+  const categories = ['Executive', 'Sales', 'Inventory', 'Member'];
   
   const isDashboardInCategory = (dashboard, category) => {
-    if (category === 'All') return true;
+    // if (category === 'All') return true;
+    if (category === 'All') return false; // Disable "All" category to prevent showing all dashboards when selected
     
     const prefix = CATEGORY_RULES[category];
 
@@ -83,7 +87,8 @@ const DashboardGallery = ({ dashboards, handleSend }) => {
             </div>
             <p className="text-sm font-medium">No dashboards found under "{selectedCategory}"</p>
             <button 
-              onClick={() => {setSearchTerm(''); setSelectedCategory('All');}}
+              // onClick={() => {setSearchTerm(''); setSelectedCategory('All');}}
+              onClick={() => {setSearchTerm(''); setSelectedCategory('Executive');}}
               className="mt-4 text-xs text-indigo-400 hover:underline"
             >
               Reset all filters

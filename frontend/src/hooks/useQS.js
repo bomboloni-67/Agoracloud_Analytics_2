@@ -4,7 +4,7 @@
  * and state management for the AiQ.
  */
 
-import { useState, useCallback, useEffect } from 'react';
+import { useState, useCallback, useEffect, useRef } from 'react';
 import { fetchAuthSession } from 'aws-amplify/auth';
 import { TOPIC_CONFIGS, API_GATEWAY_URL, TABS } from '../constants/appConstants';
 
@@ -20,6 +20,7 @@ export const useQS = (userEmail, activeTab) => {
     keys: TOPIC_CONFIGS['DEFAULT'].categories,
     grouped: { What: [], Why: [], Who: [], When: [], Other: [] } 
   });
+  const requestIdRef = useRef(0);
 
   // --- INTERNAL HELPER: AUTH TOKEN ---
   const getAuthToken = async () => {
@@ -92,12 +93,13 @@ export const useQS = (userEmail, activeTab) => {
   // --- API: EMBEDDING HANDLER ---
   const handleSend = async (question, selectedId) => {
     const targetId = selectedId || currentLoadedId || 'default';
+    const requestId = ++requestIdRef.current;
 
     if (question && targetId === currentLoadedId && activeTab === TABS.TOPICS) {
       setCurrentQuestion(question);
       return; 
     }
-
+    setEmbedUrl('');
     setIsLoading(true);
     
     try {
@@ -108,6 +110,9 @@ export const useQS = (userEmail, activeTab) => {
       const res = await fetch(`${API_GATEWAY_URL}?type=${mode}&id=${targetId}&user_id=${userEmail}`, {
         headers: { 'Authorization': token }
       });
+      if (requestId !== requestIdRef.current) {
+        return;
+      }
       
       let data = await res.json();
       

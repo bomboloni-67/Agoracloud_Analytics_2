@@ -50,14 +50,45 @@ def lambda_handler(event, context):
         if embed_type == 'Dashboards':
             experience_configuration = {
                 'Dashboard': {
-                    'InitialDashboardId': the_id
+                    'InitialDashboardId': the_id,
+                    'FeatureConfigurations': {
+                        'StatePersistence': {
+                            'Enabled': True
+                        },
+                        'Bookmarks': {
+                            'Enabled': True
+                        },
+                        'SharedView': {
+                            'Enabled': True
+                        },
+                        'AmazonQInQuickSight': {
+                            'ExecutiveSummary': {
+                                'Enabled': True
+                            }
+                        },
+                        'Schedules': {
+                            'Enabled': True
+                        },
+                        'RecentSnapshots': {
+                            'Enabled': True
+                        },
+                        'ThresholdAlerts': {
+                            'Enabled': True
+                        }
+                    }
                 }
             }
         elif embed_type == 'Stories':
             experience_configuration = {
                 'QuickSightConsole': {
-                    'InitialPath': '/start/dashboards',
+                    'InitialPath': '/start',
                     'FeatureConfigurations': {
+                        'StatePersistence': {
+                            'Enabled': True|False
+                        },
+                        'SharedView': {
+                            'Enabled': True|False
+                        },
                         'AmazonQInQuickSight': {
                             'DataStories': { 'Enabled': True },
                             'ExecutiveSummary': { 'Enabled': True },

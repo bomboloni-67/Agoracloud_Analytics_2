@@ -54,7 +54,12 @@ const Embedding = memo(({ embedUrl, activeTab, initialQuestion }) => {
     };
 
     if (embedUrl) embed();
-    return () => { isMounted = false; };
+    return () => { 
+      isMounted = false; 
+      if (embeddedExperienceRef.current?.close) {
+        embeddedExperienceRef.current.close();
+      }
+    };
   }, [embedUrl, activeTab]); 
 
   // Fast-switch handler for suggestions
