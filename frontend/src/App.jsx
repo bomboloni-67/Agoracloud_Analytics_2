@@ -31,12 +31,26 @@ function App() {
     suggestionData, handleSend
   } = useQS(userEmail, activeTab);
 
+  const resetAppState = () => {
+    setActiveTab(TABS.TOPICS);
+    setEmbedUrl('');
+    setCurrentLoadedId('');
+    setCurrentQuestion('');
+    setIsDropdownOpen(false);
+    setUserEmail('');
+  };
+
+  const handleSignOut = async () => {
+    setIsLoggingOut(true);
+    resetAppState();
+    await signOut();
+  };
+
    const resetTimer = () => {
     clearTimeout(timeoutRef.current);
 
     timeoutRef.current = setTimeout(async () => {
-      setIsLoggingOut(true); 
-      await signOut();
+      handleSignOut();
     }, IDLE_TIME);
   };
 
@@ -90,7 +104,15 @@ function App() {
     }
     console.log("isLoggedIn changed:", isLoggedIn);
   }, [isLoggedIn]);
-  
+
+  useEffect(() => {
+    if (!isLoggedIn) {
+      console.log("SESSION RESET");
+
+      resetAppState();
+    }
+  }, [isLoggedIn]);
+    
   /**
    * EFFECT: Managed UI Redirect
    * Automatically redirects unauthenticated users to the Hosted UI login page.
@@ -181,15 +203,6 @@ function App() {
 
   }, [activeTab, isLoggedIn, userEmail, availableTopics.length]);
 
-  /**
-   * Handler: handleSignOut
-   * Triggers global logout and sets a guard state to prevent auto-login loops.
-   */
-  const handleSignOut = async () => {
-    setIsLoggingOut(true); 
-    await signOut();
-  };
-
   const currentList = activeTab === TABS.DASHBOARDS ? availableDashboards : availableTopics;
   const currentSelectionName = currentList.find(item => item.id === currentLoadedId)?.name || ' ';
 
@@ -200,6 +213,12 @@ function App() {
    * This determines which primary UI module to display based on app state.
    */
   const renderContentBody = () => {
+    console.log("RENDER STATE", {
+      isLoading,
+      embedUrl,
+      availableTopics: availableTopics.length,
+      activeTab
+    });
 
     // 1. Global Loading State
     if (isLoggedIn && isLoading) {
@@ -229,7 +248,7 @@ function App() {
     }
 
     // 3. Embedded Asset View
-    if (embedUrl) {
+    if (embedUrl && embedType === activeTab) {
       return (
         <div className="flex-1 flex flex-col min-h-0 relative">
           <Embedding

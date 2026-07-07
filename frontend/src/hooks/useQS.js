@@ -93,82 +93,148 @@ export const useQS = (userEmail, activeTab) => {
   const handleSend = async (question, selectedId) => {
     const targetId = selectedId || currentLoadedId || 'default';
     const requestId = ++requestIdRef.current;
+
     console.log("handleSend called");
     console.log("selectedId", selectedId);
 
-    if (question && targetId === currentLoadedId && activeTab === TABS.TOPICS) {
+    if (
+      question &&
+      targetId === currentLoadedId &&
+      activeTab === TABS.TOPICS
+    ) {
       setCurrentQuestion(question);
-      return; 
+      return;
     }
+
     setEmbedUrl('');
     setIsLoading(true);
-    
+
     try {
-      const token = await getAuthToken(); 
       const mode = activeTab;
+
       setEmbedType(mode);
-      
-      const fetchEmbedData = async () => {
-        const response = await fetch(
-          `${API_GATEWAY_URL}?type=${mode}&id=${targetId}&user_id=${userEmail}`,
-          {
-            headers: { Authorization: token }
+
+      const fetchEmbedData = async (retries = 5) => {
+        let lastError;
+
+        for (let attempt = 1; attempt <= retries; attempt++) {
+          try {
+            const token = await getAuthToken();
+            console.log(
+              `Fetching embed URL (${attempt}/${retries})`
+            );
+
+            const response = await fetch(
+              `${API_GATEWAY_URL}?type=${mode}&id=${targetId}&user_id=${userEmail}`,
+              {
+                headers: {
+                  Authorization: token
+                }
+              }
+            );
+
+            const responseData = await response.json();
+
+            console.log("RESPONSE");
+            console.log(responseData);
+            console.log(
+              "Returned embed URL:",
+              responseData.embed_url
+            );
+
+            if (!response.ok) {
+              throw new Error(
+                `HTTP ${response.status}: ${
+                  responseData?.message || "Unknown Error"
+                }`
+              );
+            }
+
+            if (!responseData.embed_url) {
+              throw new Error(
+                "Lambda returned empty embed_url"
+              );
+            }
+
+            return {
+              response,
+              responseData
+            };
+
+          } catch (err) {
+            lastError = err;
+
+            console.warn(
+              `Attempt ${attempt}/${retries} failed`,
+              err
+            );
+
+            if (attempt < retries) {
+              await new Promise(resolve =>
+                setTimeout(resolve, 1000)
+              );
+            }
           }
-        );
+        }
 
-        const responseData = await response.json();
-
-        return {
-          response,
-          responseData
-        };
+        throw lastError;
       };
 
-      let { response: res, responseData: data } = await fetchEmbedData();
+      const {
+        response: res,
+        responseData: data
+      } = await fetchEmbedData();
 
       if (requestId !== requestIdRef.current) {
+        console.log(
+          "Ignoring stale request",
+          requestId
+        );
         return;
       }
 
-      let finalEmbedUrl = data.embed_url;
-
-      // Retry once if embed URL is missing
-      if (res.ok && !finalEmbedUrl) {
-        console.warn(
-          `Empty embed URL returned for ${targetId}. Retrying once...`
-        );
-
-        await new Promise(resolve => setTimeout(resolve, 1000));
-
-        const retryResult = await fetchEmbedData();
-
-        res = retryResult.response;
-        data = retryResult.responseData;
-
-        finalEmbedUrl = data.embed_url;
-      }
+      const finalEmbedUrl = data.embed_url;
 
       if (res.ok) {
-        setEmbedUrl(finalEmbedUrl || '');
-        setAvailableDashboards(data.available_dashboards || []);
-        setAvailableTopics(data.available_topics || []);
-        setSuggestionData(
-          categorizeQuestions(data.suggestions || [], targetId)
+        setEmbedUrl(finalEmbedUrl);
+
+        console.log(
+          "EMBED URL RETURNED:",
+          finalEmbedUrl
         );
+
+        setAvailableDashboards(
+          data.available_dashboards || []
+        );
+
+        setAvailableTopics(
+          data.available_topics || []
+        );
+
+        setSuggestionData(
+          categorizeQuestions(
+            data.suggestions || [],
+            targetId
+          )
+        );
+
         setCurrentQuestion(question || '');
 
-        if (targetId && targetId !== 'default') {
+        if (
+          targetId &&
+          targetId !== 'default'
+        ) {
           setCurrentLoadedId(targetId);
         }
-
-        if (!finalEmbedUrl) {
-          console.error(
-            `Failed to obtain embed URL for ${targetId} after retry`
-          );
-        }
       }
+
     } catch (error) {
-      console.error('Embedding API Error:', error);
+      console.error(
+        'Embedding API Error:',
+        error
+      );
+
+      setEmbedUrl('');
     } finally {
       setIsLoading(false);
     }
