@@ -76,7 +76,6 @@ export const useQS = (userEmail, activeTab) => {
     }
   };
     // 2. Add this Internal Effect to handle the "Auto-Discovery"
-    // This solves the race condition entirely.
     useEffect(() => {
     if (userEmail) {
         setIsLoading(true);
@@ -94,6 +93,8 @@ export const useQS = (userEmail, activeTab) => {
   const handleSend = async (question, selectedId) => {
     const targetId = selectedId || currentLoadedId || 'default';
     const requestId = ++requestIdRef.current;
+    console.log("handleSend called");
+    console.log("selectedId", selectedId);
 
     if (question && targetId === currentLoadedId && activeTab === TABS.TOPICS) {
       setCurrentQuestion(question);
@@ -107,28 +108,67 @@ export const useQS = (userEmail, activeTab) => {
       const mode = activeTab;
       setEmbedType(mode);
       
-      const res = await fetch(`${API_GATEWAY_URL}?type=${mode}&id=${targetId}&user_id=${userEmail}`, {
-        headers: { 'Authorization': token }
-      });
+      const fetchEmbedData = async () => {
+        const response = await fetch(
+          `${API_GATEWAY_URL}?type=${mode}&id=${targetId}&user_id=${userEmail}`,
+          {
+            headers: { Authorization: token }
+          }
+        );
+
+        const responseData = await response.json();
+
+        return {
+          response,
+          responseData
+        };
+      };
+
+      let { response: res, responseData: data } = await fetchEmbedData();
+
       if (requestId !== requestIdRef.current) {
         return;
       }
-      
-      let data = await res.json();
-      
-      if (res.ok) {
-        let finalEmbedUrl = data.embed_url;
 
-        // SINGLE PLACE TO SET STATE
-        setEmbedUrl(finalEmbedUrl || ''); 
+      let finalEmbedUrl = data.embed_url;
+
+      // Retry once if embed URL is missing
+      if (res.ok && !finalEmbedUrl) {
+        console.warn(
+          `Empty embed URL returned for ${targetId}. Retrying once...`
+        );
+
+        await new Promise(resolve => setTimeout(resolve, 1000));
+
+        const retryResult = await fetchEmbedData();
+
+        res = retryResult.response;
+        data = retryResult.responseData;
+
+        finalEmbedUrl = data.embed_url;
+      }
+
+      if (res.ok) {
+        setEmbedUrl(finalEmbedUrl || '');
         setAvailableDashboards(data.available_dashboards || []);
         setAvailableTopics(data.available_topics || []);
-        setSuggestionData(categorizeQuestions(data.suggestions || [], targetId));
+        setSuggestionData(
+          categorizeQuestions(data.suggestions || [], targetId)
+        );
         setCurrentQuestion(question || '');
-        if (targetId && targetId !== 'default') setCurrentLoadedId(targetId);
+
+        if (targetId && targetId !== 'default') {
+          setCurrentLoadedId(targetId);
+        }
+
+        if (!finalEmbedUrl) {
+          console.error(
+            `Failed to obtain embed URL for ${targetId} after retry`
+          );
+        }
       }
     } catch (error) {
-      console.error("Embedding API Error:", error);
+      console.error('Embedding API Error:', error);
     } finally {
       setIsLoading(false);
     }

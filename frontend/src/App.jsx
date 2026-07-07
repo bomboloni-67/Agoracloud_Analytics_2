@@ -76,7 +76,8 @@ function App() {
         try {
           const session = await fetchAuthSession();
           const email = session.tokens?.idToken?.payload?.email;
-          
+          setIsLoggingOut(false); 
+          console.log("Email found:", email);
           if (email) {
             setUserEmail(email);
           }
@@ -87,6 +88,7 @@ function App() {
 
       initializeUser();
     }
+    console.log("isLoggedIn changed:", isLoggedIn);
   }, [isLoggedIn]);
   
   /**
@@ -142,10 +144,26 @@ function App() {
    */
   useEffect(() => {
     // Guard: Only auto-load if we have user identity and aren't already loading
-    if (!isLoggedIn || !userEmail) return;
+    console.log("=== AUTO LOADER ===");
+    console.log("isLoggedIn:", isLoggedIn);
+    console.log("userEmail:", userEmail);
+    console.log("activeTab:", activeTab);
+    console.log("availableTopics:", availableTopics.length);
+    console.log("embedUrl:", embedUrl);
+    if (!isLoggedIn || !userEmail) {
+      console.warn("AUTO LOADER EXIT: Missing login/email");
+      return;
+    }
+
 
     // Don't auto-load "TOPICS" until we have topics
-    if (activeTab === TABS.TOPICS && availableTopics.length === 0) return;
+    if (
+      activeTab === TABS.TOPICS &&
+      availableTopics.length === 0
+    ) {
+      console.warn("AUTO LOADER EXIT: No topics");
+      return;
+    }
 
     const performAutoLoad = async () => {
       if (activeTab === TABS.STORIES) {
@@ -153,6 +171,8 @@ function App() {
       } else if (activeTab === TABS.TOPICS) {
         // Use availableTopics from the hook to decide what to load
         const targetId = availableTopics[0].id;
+        console.log("AUTOLOADER FIRED");
+        console.log("availableTopics", availableTopics);
         handleSend('', targetId);
       }
     };
@@ -181,34 +201,71 @@ function App() {
    */
   const renderContentBody = () => {
 
+    // 1. Global Loading State
     if (isLoggedIn && isLoading) {
-      return null;
+      return (
+        <div className="flex-1 flex flex-col items-center justify-center text-center px-4">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-white mb-4"></div>
+          <h1 className="text-xl font-bold text-white mb-2">
+            Loading...
+          </h1>
+          <p className="text-slate-500 text-xs">
+            Please wait while we load your content.
+          </p>
+        </div>
+      );
     }
-    // 1. Dashboard Gallery View
+
+    // 2. Dashboard Gallery View
     if (activeTab === TABS.DASHBOARDS) {
-      if (!embedUrl || embedType !== TABS.DASHBOARDS){
-        return <DashboardGallery dashboards={availableDashboards} handleSend={handleSend} />;
+      if (!embedUrl || embedType !== TABS.DASHBOARDS) {
+        return (
+          <DashboardGallery
+            dashboards={availableDashboards}
+            handleSend={handleSend}
+          />
+        );
       }
     }
 
-    // 2. Embedded Asset View (Dashboard, Topic, or Story)
+    // 3. Embedded Asset View
     if (embedUrl) {
       return (
         <div className="flex-1 flex flex-col min-h-0 relative">
-          <Embedding 
+          <Embedding
             key={currentLoadedId}
-            embedUrl={embedUrl} 
-            activeTab={activeTab} 
-            initialQuestion={currentQuestion} 
+            embedUrl={embedUrl}
+            activeTab={activeTab}
+            initialQuestion={currentQuestion}
           />
         </div>
       );
     }
-    // 3. Fallback / Default Empty State
+
+    // 4. Prevent "Work in Progress" flash while Topics are available
+    if (
+      activeTab === TABS.TOPICS &&
+      availableTopics.length > 0
+    ) {
+      return (
+        <div className="flex-1 flex flex-col items-center justify-center">
+          <div className="w-10 h-10 border-2 border-indigo-500/20 border-t-indigo-500 rounded-full animate-spin mb-3"></div>
+          <p className="text-[10px] uppercase tracking-[0.2em] text-indigo-400 font-bold">
+            Loading...
+          </p>
+        </div>
+      );
+    }
+
+    // 5. Final Fallback State
     return (
       <div className="flex-1 flex flex-col items-center justify-center text-center px-4 opacity-50">
-        <h1 className="text-xl font-bold text-white mb-2">Work in Progress</h1>
-        <p className="text-slate-500 text-xs">Please try other features.</p>
+        <h1 className="text-xl font-bold text-white mb-2">
+          Work in Progress
+        </h1>
+        <p className="text-slate-500 text-xs">
+          Please try other features.
+        </p>
       </div>
     );
   };
@@ -220,7 +277,7 @@ function App() {
    */
   const renderHeader = () => {
     const isAssetView = (
-      (activeTab === TABS.TOPICS && availableTopics.length > 0) || 
+      (activeTab === TABS.TOPICS && availableTopics.length > 0 && embedUrl) || 
       (activeTab === TABS.DASHBOARDS && embedUrl && availableDashboards.length > 0 && embedType === TABS.DASHBOARDS)
     ) && !isLoading;
 
