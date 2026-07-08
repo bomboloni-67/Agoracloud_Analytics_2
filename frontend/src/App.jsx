@@ -203,7 +203,39 @@ function App() {
 
   }, [activeTab, isLoggedIn, userEmail, availableTopics.length]);
 
-  const currentList = activeTab === TABS.DASHBOARDS ? availableDashboards : availableTopics;
+  const currentList = useMemo(() => {
+    const sourceList =
+      activeTab === TABS.DASHBOARDS
+        ? availableDashboards
+        : availableTopics;
+
+    const sortedList = [...sourceList].sort((a, b) =>
+      a.name.localeCompare(b.name)
+    );
+
+    if (!currentLoadedId) {
+      return sortedList;
+    }
+
+    const selectedItem = sortedList.find(
+      item => item.id === currentLoadedId
+    );
+
+    if (!selectedItem) {
+      return sortedList;
+    }
+
+    return [
+      selectedItem,
+      ...sortedList.filter(item => item.id !== currentLoadedId)
+    ];
+  }, [
+    activeTab,
+    availableDashboards,
+    availableTopics,
+    currentLoadedId
+  ]);
+
   const currentSelectionName = currentList.find(item => item.id === currentLoadedId)?.name || ' ';
 
 
