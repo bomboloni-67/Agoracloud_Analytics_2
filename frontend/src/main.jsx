@@ -25,7 +25,7 @@ Amplify.configure({
           scopes: [
             'email', 
             'openid', 
-            'phone', 
+            // For future to change password. Might not be needed if we handle password change in the backend.
             'aws.cognito.signin.user.admin'
           ],
           redirectSignIn: [redirectUrl], 

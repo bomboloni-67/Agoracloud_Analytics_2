@@ -46,7 +46,7 @@ function App() {
     await signOut();
   };
 
-   const resetTimer = () => {
+  const resetTimer = () => {
     clearTimeout(timeoutRef.current);
 
     timeoutRef.current = setTimeout(async () => {
@@ -54,6 +54,7 @@ function App() {
     }, IDLE_TIME);
   };
 
+  // --- EFFECT: User Activity Listener ---
   useEffect(() => {
     const events = [
       'mousedown',
@@ -105,6 +106,7 @@ function App() {
     console.log("isLoggedIn changed:", isLoggedIn);
   }, [isLoggedIn]);
 
+  // --- EFFECT: Session Reset on Logout ---
   useEffect(() => {
     if (!isLoggedIn) {
       console.log("SESSION RESET");
@@ -203,6 +205,7 @@ function App() {
 
   }, [activeTab, isLoggedIn, userEmail, availableTopics.length]);
 
+  // --- EFFECT: List Sorting for Dropdown ---
   const currentList = useMemo(() => {
     const sourceList =
       activeTab === TABS.DASHBOARDS
