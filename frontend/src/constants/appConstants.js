@@ -6,7 +6,7 @@
 
 // --- TOPIC & CATEGORY CONFIGURATIONS ---
 export const TOPIC_CONFIGS = {
-  [import.meta.env.VITE_INV_B_ITM_ID]: {
+  ['5pwe8iHQ2K6rdCEVWNf86iHewNEop5L8']: {
     categories: ['Sales', 'Inventory', 'Supplier', 'Department', 'Other'],
     rules: [
       { key: 'Sales', keywords: ['sale', 'revenue', 'sold', 'profit', 'profitable', 'gp', 'sales'] },
