@@ -111,14 +111,14 @@ const DashboardGallery = ({ dashboards, handleSend }) => {
                   </div> */}
                 </div>
 
-                <div className="pt-4 border-t border-slate-800/50 flex items-center justify-between">
+                {/* <div className="pt-4 border-t border-slate-800/50 flex items-center justify-between">
                   <span className="text-[11px] font-bold text-indigo-400 uppercase tracking-wider opacity-0 group-hover:opacity-100 transition-all duration-500 translate-x-[-10px] group-hover:translate-x-0">
                     View Dashboard
                   </span>
                   <div className="w-8 h-8 rounded-full bg-slate-800 flex items-center justify-center group-hover:bg-indigo-500 group-hover:text-white transition-all duration-500">
                     <ChevronRight size={16} />
                   </div>
-                </div>
+                </div> */}
               </button>
             ))}
           </div>
