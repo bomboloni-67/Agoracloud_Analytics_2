@@ -16,6 +16,21 @@ export const TOPIC_CONFIGS = {
     ],
     defaultCategory: 'Other'
   },
+  ['YzLRH6qyqoHMgpC6ufVb6vqDy8sdDzeZ']: {
+    categories: ['Sales', 'Product', 'Store', 'Department', 'Other'],
+    rules: [
+      { key: 'Sales', keywords: ['sale', 'sales', 'revenue', 'profit', 'margin', 'gp',
+                                  'units sold', 'quantity sold', 'transaction',
+                                  'basket', 'receipt', 'turnover', 'growth'] },
+      { key: 'Product', keywords: ['item', 'product', 'sku', 'article', 'model', 'brand'] },
+      { key: 'Store', keywords: [ 'store', 'outlet', 'branch',
+                                  'location', 'region', 'cluster',
+                                  'channel'] },
+      { key: 'Department', keywords: ['dept', 'department', 'category', 'division'] },
+    ],
+    defaultCategory: 'Other'
+  },
+  
   'DEFAULT': {
     categories: ['What', 'Why', 'Who', 'When', 'Other'],
     rules: [
