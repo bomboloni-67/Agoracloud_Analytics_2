@@ -43,7 +43,11 @@ function App() {
   const handleSignOut = async () => {
     setIsLoggingOut(true);
     resetAppState();
-    await signOut();
+    try {
+      await signOut();
+    } finally {
+      setIsLoggingOut(false);
+    }
   };
 
   const resetTimer = () => {
@@ -56,9 +60,10 @@ function App() {
 
   // --- EFFECT: User Activity Listener ---
   useEffect(() => {
+    if(!isLoggedIn) return;
     const events = [
       'mousedown',
-      'keypress',
+      'keydown',
       'scroll',
       'touchstart'
     ];
@@ -76,7 +81,7 @@ function App() {
         window.removeEventListener(event, resetTimer)
       );
     };
-  }, []);
+  }, [isLoggedIn]);
 
   // Derived Values
   const displayUsername = useMemo(() => userEmail.match(/^[^@]+/)?.[0] || 'User', [userEmail]);
@@ -107,12 +112,13 @@ function App() {
   }, [isLoggedIn]);
 
   // --- EFFECT: Session Reset on Logout ---
+  const wasLoggedIn = useRef(isLoggedIn);
   useEffect(() => {
-    if (!isLoggedIn) {
+    if (!isLoggedIn && wasLoggedIn.current) {
       console.log("SESSION RESET");
-
       resetAppState();
     }
+    wasLoggedIn.current = isLoggedIn;
   }, [isLoggedIn]);
     
   /**
