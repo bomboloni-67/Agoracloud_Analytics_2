@@ -13,7 +13,7 @@ const DashboardGallery = ({ dashboards, handleSend }) => {
     // if (category === 'All') return true;
     if (category === 'All') return false; // Disable "All" category to prevent showing all dashboards when selected
     
-    const prefix = CATEGORY_RULES[category];
+    const prefix = CATEGORY_RULES[category] || [];
 
     return prefix.some(idPart => dashboard.id.toLowerCase().includes(idPart.toLowerCase()));
   };

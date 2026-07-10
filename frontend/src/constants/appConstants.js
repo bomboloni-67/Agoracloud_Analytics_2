@@ -37,7 +37,7 @@ export const CATEGORY_RULES = {
   };
 
 
-export const CATEGORIES = ['Executive', 'Sales', 'Inventory', 'Member'];
+export const CATEGORIES = ['Executive', 'Sales', 'Inventory', 'Member', 'Self Service'];
 //If user wants a category to view ALL dashbaords  ['All', 'Executive', 'Sales', 'Inventory', 'Member'];
 
 // --- API ENDPOINTS ---
