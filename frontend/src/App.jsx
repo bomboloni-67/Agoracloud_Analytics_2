@@ -15,10 +15,11 @@ function App() {
   const { authStatus } = useAuthenticator(context => [context.user]);
   const isLoggedIn = authStatus === 'authenticated';
   const [isLoggingOut, setIsLoggingOut] = useState(false);
-  const [activeTab, setActiveTab] = useState(TABS.TOPICS);
+  const [activeTab, setActiveTab] = useState(TABS.DASHBOARDS);
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const dropdownRef = useRef(null); 
   const [userEmail, setUserEmail] = useState('');
+  const [signedOutIntentionally, setSignedOutIntentionally] = useState(false);
 
   const timeoutRef = useRef(null);
   const IDLE_TIME = 30 * 60 * 1000; // 30 minutes
@@ -28,11 +29,11 @@ function App() {
     currentQuestion, setCurrentQuestion,
     currentLoadedId, setCurrentLoadedId,
     availableTopics, availableDashboards,
-    suggestionData, handleSend
+    suggestionData, handleSend, fetchDiscoveryData
   } = useQS(userEmail, activeTab);
 
   const resetAppState = () => {
-    setActiveTab(TABS.TOPICS);
+    setActiveTab(TABS.DASHBOARDS);
     setEmbedUrl('');
     setCurrentLoadedId('');
     setCurrentQuestion('');
@@ -42,6 +43,7 @@ function App() {
 
   const handleSignOut = async () => {
     setIsLoggingOut(true);
+    setSignedOutIntentionally(true);
     resetAppState();
     try {
       await signOut();
@@ -97,6 +99,7 @@ function App() {
           const session = await fetchAuthSession();
           const email = session.tokens?.idToken?.payload?.email;
           setIsLoggingOut(false); 
+          setSignedOutIntentionally(false); 
           console.log("Email found:", email);
           if (email) {
             setUserEmail(email);
@@ -126,10 +129,10 @@ function App() {
    * Automatically redirects unauthenticated users to the Hosted UI login page.
    */
   useEffect(() => {
-    if (authStatus === 'unauthenticated' && !isLoggingOut) {
+    if (authStatus === 'unauthenticated' && !isLoggingOut && !signedOutIntentionally) {
       signInWithRedirect();
     }
-  }, [authStatus, isLoggingOut]);
+  }, [authStatus, isLoggingOut, signedOutIntentionally]);
 
   /**
    * EFFECT: Click Outside Handler
@@ -195,6 +198,13 @@ function App() {
       return;
     }
 
+    if (activeTab === TABS.DASHBOARDS) {
+      if (availableDashboards.length === 0) {
+        fetchDiscoveryData(TABS.DASHBOARDS);
+      }
+      return;
+    }
+
     const performAutoLoad = async () => {
       if (activeTab === TABS.STORIES) {
         handleSend('', 'gallery');
@@ -204,12 +214,12 @@ function App() {
         console.log("AUTOLOADER FIRED");
         console.log("availableTopics", availableTopics);
         handleSend('', targetId);
-      }
+      } 
     };
 
     performAutoLoad();
 
-  }, [activeTab, isLoggedIn, userEmail, availableTopics.length]);
+  }, [activeTab, isLoggedIn, userEmail, availableTopics.length, availableDashboards.length]);
 
   // --- EFFECT: List Sorting for Dropdown ---
   const currentList = useMemo(() => {

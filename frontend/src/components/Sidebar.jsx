@@ -16,9 +16,9 @@ const Sidebar = ({ signOut, username, activeTab, setActiveTab, isLoading }) => {
   const [isCollapsed, setIsCollapsed] = useState(false);
 
   const menuItems = [
+    { name: TABS.DASHBOARDS, icon: <LayoutDashboard size={20} /> },
     { name: TABS.TOPICS, icon: <MessageSquare size={20} /> },
     { name: TABS.STORIES, icon: <BookOpen size={20} /> },
-    { name: TABS.DASHBOARDS, icon: <LayoutDashboard size={20} /> },
     { name: TABS.SETTINGS, icon: <Settings size={20} /> },
   ];
 
