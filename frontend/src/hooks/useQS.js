@@ -69,7 +69,7 @@ export const useQS = (userEmail, activeTab) => {
       
       if (res.ok) {
         if (mode === TABS.DASHBOARDS && data.available_dashboards) setAvailableDashboards(data.available_dashboards);
-        if (mode === TABS.TOPICS && data.available_topics) setAvailableTopics(data.available_topics);
+        if (mode === TABS.AiQ && data.available_topics) setAvailableTopics(data.available_topics);
       }
     } catch (error) {
       console.error(`Discovery Error (${mode}):`, error);
@@ -81,7 +81,7 @@ export const useQS = (userEmail, activeTab) => {
         setIsLoading(true);
         Promise.all(
             [
-                fetchDiscoveryData(TABS.TOPICS)            
+                fetchDiscoveryData(TABS.AiQ)            
             ]
         ).finally( 
             () => setIsLoading(false)
@@ -100,7 +100,7 @@ export const useQS = (userEmail, activeTab) => {
     if (
       question &&
       targetId === currentLoadedId &&
-      activeTab === TABS.TOPICS
+      activeTab === TABS.AiQ
     ) {
       setCurrentQuestion(question);
       return;
@@ -113,6 +113,7 @@ export const useQS = (userEmail, activeTab) => {
       const mode = activeTab;
 
       setEmbedType(mode);
+      console.log(`Fetching embed URL for ${mode} with ID: ${targetId}`);
 
       const fetchEmbedData = async (retries = 5) => {
         let lastError;

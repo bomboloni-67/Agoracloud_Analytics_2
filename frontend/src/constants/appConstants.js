@@ -69,11 +69,11 @@ export const PAGE_METADATA = {
     h2: 'Account Settings', 
     p: 'Manage your profile and security preferences' 
   },
-  'Stories': { 
-    h2: 'Data Stories', 
-    p: 'Create exciting stories from your data insights' 
+  'Workspace': { 
+    h2: 'Workspace', 
+    p: 'All your admin and management tools in one place' 
   },
-  'Topics': {
+  'AiQ': {
     h2: 'Generative Insights',
     p: 'Ask questions about your data in plain English'
   }
@@ -81,8 +81,8 @@ export const PAGE_METADATA = {
 
 // --- TAB IDENTIFIERS ---
 export const TABS = {
-  TOPICS: 'Topics',
+  AiQ: 'AiQ',
   DASHBOARDS: 'Dashboards',
-  STORIES: 'Stories',
+  WORKSPACE: 'Workspace',
   SETTINGS: 'Settings'
 };

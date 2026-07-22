@@ -191,7 +191,7 @@ function App() {
 
     // Don't auto-load "TOPICS" until we have topics
     if (
-      activeTab === TABS.TOPICS &&
+      activeTab === TABS.AiQ &&
       availableTopics.length === 0
     ) {
       console.warn("AUTO LOADER EXIT: No topics");
@@ -206,9 +206,9 @@ function App() {
     }
 
     const performAutoLoad = async () => {
-      if (activeTab === TABS.STORIES) {
+      if (activeTab === TABS.WORKSPACE) {
         handleSend('', 'gallery');
-      } else if (activeTab === TABS.TOPICS) {
+      } else if (activeTab === TABS.AiQ) {
         // Use availableTopics from the hook to decide what to load
         const targetId = availableTopics[0].id;
         console.log("AUTOLOADER FIRED");
@@ -314,7 +314,7 @@ function App() {
 
     // 4. Prevent "Work in Progress" flash while Topics are available
     if (
-      activeTab === TABS.TOPICS &&
+      activeTab === TABS.AiQ &&
       availableTopics.length > 0
     ) {
       return (
@@ -347,7 +347,7 @@ function App() {
    */
   const renderHeader = () => {
     const isAssetView = (
-      (activeTab === TABS.TOPICS && availableTopics.length > 0 && embedUrl) || 
+      (activeTab === TABS.AiQ && availableTopics.length > 0 && embedUrl) || 
       (activeTab === TABS.DASHBOARDS && embedUrl && availableDashboards.length > 0 && embedType === TABS.DASHBOARDS)
     ) && !isLoading;
 
@@ -417,7 +417,7 @@ function App() {
     }
 
     // Fallback: Standard Page Titles
-    const content = PAGE_METADATA[activeTab] || PAGE_METADATA[TABS.TOPICS];
+    const content = PAGE_METADATA[activeTab] || PAGE_METADATA[TABS.AiQ];
 
     return (
       <div className="flex flex-col">
@@ -479,7 +479,7 @@ function App() {
             {/* --- SECTION: SUGGESTION DISCOVERY --- 
                 Contextual prompt helper for the 'TOPICS' (Q) experience.
             */}
-            {activeTab === TABS.TOPICS && embedUrl && !isLoading && (
+            {activeTab === TABS.AiQ && embedUrl && !isLoading && (
               <div className="shrink-0 z-30 mb-4">
                 <SuggestionBar 
                   suggestions={suggestionData.grouped} 

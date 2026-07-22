@@ -7,7 +7,8 @@ import {
   LogOut, 
   UserCircle, 
   Sparkles,
-  BookOpen 
+  BookOpen,
+  MonitorCloud
 } from 'lucide-react';
 import { TABS } from '../constants/appConstants';
 
@@ -17,8 +18,8 @@ const Sidebar = ({ signOut, username, activeTab, setActiveTab, isLoading }) => {
 
   const menuItems = [
     { name: TABS.DASHBOARDS, icon: <LayoutDashboard size={20} /> },
-    { name: TABS.TOPICS, icon: <MessageSquare size={20} /> },
-    { name: TABS.STORIES, icon: <BookOpen size={20} /> },
+    { name: TABS.AiQ, icon: <MessageSquare size={20} /> },
+    { name: TABS.WORKSPACE, icon: <MonitorCloud size={20} /> },
     { name: TABS.SETTINGS, icon: <Settings size={20} /> },
   ];
 

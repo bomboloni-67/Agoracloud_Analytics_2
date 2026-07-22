@@ -30,7 +30,7 @@ const Embedding = memo(({ embedUrl, activeTab, initialQuestion }) => {
           embeddedExperienceRef.current = await contextRef.current.embedDashboard(frameOptions, {
             toolbarOptions: { export: true, undoRedo: true, reset: true, executiveSummary: true }
           });
-        } else if (activeTab === TABS.STORIES) {
+        } else if (activeTab === TABS.WORKSPACE) {
           embeddedExperienceRef.current = await contextRef.current.embedConsole(frameOptions, {
             toolbarOptions: {
               executiveSummary: true,
@@ -64,7 +64,7 @@ const Embedding = memo(({ embedUrl, activeTab, initialQuestion }) => {
 
   // Fast-switch handler for suggestions
   useEffect(() => {
-    if (activeTab === TABS.TOPICS && embeddedExperienceRef.current && initialQuestion) {
+    if (activeTab === TABS.AiQ && embeddedExperienceRef.current && initialQuestion) {
       embeddedExperienceRef.current.setQuestion(initialQuestion);
     }
   }, [initialQuestion, activeTab]);
